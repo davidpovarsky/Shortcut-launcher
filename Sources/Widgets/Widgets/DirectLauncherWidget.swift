@@ -10,7 +10,7 @@ struct DirectLauncherWidgetIntent: WidgetConfigurationIntent {
     var launcher: LauncherEntity?
 
     @Parameter(title: "Action")
-    var shortcut: SystemShortcut
+    var shortcut: SystemShortcut?
 }
 
 struct DirectLauncherEntry: TimelineEntry {
@@ -48,13 +48,14 @@ struct DirectLauncherWidgetView: View {
     }
 
     var body: some View {
-        if let configuration = entry.configuration {
+        if let configuration = entry.configuration,
+           let shortcut = configuration.shortcut {
             let state = profile?.resolvedState() ?? .idle
             let style = profile?.appearance.style(for: state)
                 ?? LauncherVisualStyle(title: "Run", symbolName: "play.fill", tint: .blue)
             let title = style.title.isEmpty ? (profile?.name ?? "Run") : style.title
 
-            Button(intent: RunSystemShortcutIntent(shortcut: configuration.shortcut)) {
+            Button(intent: RunSystemShortcutIntent(shortcut: shortcut)) {
                 VStack(spacing: 12) {
                     Image(systemName: style.symbolName)
                         .font(.system(size: 36, weight: .semibold))
@@ -63,7 +64,7 @@ struct DirectLauncherWidgetView: View {
                         .font(.headline)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
-                    Text(configuration.shortcut.displayRepresentation.title)
+                    Text(shortcut.displayRepresentation.title)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
