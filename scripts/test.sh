@@ -12,6 +12,10 @@ else
   UDID="$(python3 "${ROOT_DIR}/scripts/select_simulator.py")"
 fi
 
+log "Booting test simulator ${UDID}"
+xcrun simctl boot "${UDID}" 2>/dev/null || true
+xcrun simctl bootstatus "${UDID}" -b 2>&1 | tee "${LOG_DIR}/test-simulator-boot.log"
+
 log "Testing on simulator ${UDID}"
 set -o pipefail
 xcodebuild \
@@ -20,6 +24,7 @@ xcodebuild \
   -configuration Debug \
   -destination "platform=iOS Simulator,id=${UDID}" \
   -derivedDataPath "${BUILD_DIR}/DerivedData-Tests" \
+  -parallel-testing-enabled NO \
   APP_BUNDLE_ID="${APP_BUNDLE_ID}" \
   APP_GROUP_ID="${APP_GROUP_ID}" \
   CODE_SIGNING_ALLOWED=NO \
