@@ -4,6 +4,7 @@ struct SendLauncherNotificationIntent: AppIntent {
     static let title: LocalizedStringResource = "Send Launcher Notification"
     static let description = IntentDescription("Send a configured local notification that can trigger a Notification Automation in Shortcuts.")
     static let supportedModes: IntentModes = .background
+    static var allowedExecutionTargets: IntentExecutionTargets { .main }
 
     @Parameter(title: "Launcher")
     var launcher: LauncherEntity

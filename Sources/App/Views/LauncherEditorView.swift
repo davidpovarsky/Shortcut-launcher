@@ -18,8 +18,11 @@ struct LauncherEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("General") {
+                Section("Control Profile") {
                     TextField("Name", text: $draft.name)
+                    Text("This profile controls the Control Center icon, color and persistent state. Notifications are edited separately in the Notifications section.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
                 VisualStyleEditor(title: "Idle appearance", style: $draft.appearance.idle)
@@ -27,26 +30,11 @@ struct LauncherEditorView: View {
                 VisualStyleEditor(title: "Success appearance", style: $draft.appearance.success)
                 VisualStyleEditor(title: "Error appearance", style: $draft.appearance.failure)
 
-                Section("Notification Automation") {
-                    Toggle("Send local notification", isOn: $draft.notification.isEnabled)
-                    TextField("Notification title", text: $draft.notification.title)
-                    TextField("Subtitle", text: $draft.notification.subtitle)
-                    TextField("Body", text: $draft.notification.body, axis: .vertical)
-                        .lineLimit(2...5)
-                    Toggle("Include automation token", isOn: $draft.notification.includesAutomationToken)
-                    if draft.notification.includesAutomationToken {
-                        TextField("Automation token", text: $draft.notification.automationToken)
-                            .textInputAutocapitalization(.characters)
-                            .autocorrectionDisabled()
-                    }
-                    Toggle("Play sound", isOn: $draft.notification.playsSound)
-                }
-
                 Section("Preview") {
                     LauncherStatePreview(profile: draft)
                 }
             }
-            .navigationTitle("Edit Launcher")
+            .navigationTitle("Edit Control")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", action: onCancel)
@@ -65,7 +53,7 @@ struct LauncherEditorView: View {
 }
 
 private struct VisualStyleEditor: View {
-    let title: String
+    let title: LocalizedStringKey
     @Binding var style: LauncherVisualStyle
 
     private let symbols = [
@@ -74,11 +62,13 @@ private struct VisualStyleEditor: View {
         "house", "house.fill", "lock", "lock.open", "wifi",
         "antenna.radiowaves.left.and.right", "speaker.wave.2.fill",
         "moon.fill", "sun.max.fill", "checkmark.circle.fill",
-        "xmark.circle.fill", "exclamationmark.triangle.fill", "hourglass"
+        "xmark.circle.fill", "exclamationmark.triangle.fill", "hourglass",
+        "sparkles", "music.note", "headphones", "display", "airplayvideo",
+        "tv", "gamecontroller.fill", "car.fill", "figure.walk", "bed.double.fill"
     ]
 
     var body: some View {
-        Section(title) {
+        Section {
             TextField("Status title", text: $style.title)
             HStack {
                 TextField("SF Symbol", text: $style.symbolName)
@@ -101,6 +91,8 @@ private struct VisualStyleEditor: View {
                         .tag(tint)
                 }
             }
+        } header: {
+            Text(title)
         }
     }
 }
@@ -109,15 +101,16 @@ private struct LauncherStatePreview: View {
     let profile: LauncherProfile
 
     var body: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 12) {
             ForEach(LauncherState.allCases, id: \.self) { state in
                 let style = profile.appearance.style(for: state)
                 VStack(spacing: 6) {
                     Image(systemName: style.symbolName)
                         .font(.title2)
                         .foregroundStyle(style.tint.color)
-                    Text(state.defaultTitle)
+                    Text(LocalizedStringKey(state.defaultTitle))
                         .font(.caption2)
+                        .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
             }

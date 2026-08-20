@@ -10,7 +10,7 @@ struct LauncherRowView: View {
         Label {
             VStack(alignment: .leading, spacing: 2) {
                 Text(profile.name)
-                Text(state.defaultTitle)
+                Text(LocalizedStringKey(state.defaultTitle))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

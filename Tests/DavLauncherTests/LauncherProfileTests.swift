@@ -38,4 +38,14 @@ final class LauncherProfileTests: XCTestCase {
         XCTAssertEqual(profile.appearance.style(for: .active).symbolName, "lightbulb.fill")
         XCTAssertEqual(profile.appearance.style(for: .active).tint, .yellow)
     }
+
+    func testNewProfileHasStableAutomationToken() {
+        let profile = LauncherProfile.makeNew()
+        XCTAssertTrue(profile.notification.automationToken.hasPrefix("DAV:"))
+        XCTAssertFalse(profile.notification.automationToken.isEmpty)
+    }
+
+    func testAllWidgetStylesAreAvailable() {
+        XCTAssertEqual(LauncherWidgetStyle.allCases.count, 4)
+    }
 }

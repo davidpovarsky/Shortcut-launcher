@@ -7,9 +7,9 @@ enum LauncherError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .profileNotFound:
-            "Launcher profile was not found."
+            String(localized: "Launcher profile was not found.")
         case .notificationsNotAuthorized:
-            "Notifications are not authorized for Dav Launcher. Open the app and enable notifications first."
+            String(localized: "Notifications are not authorized for Dav Launcher. Open the app and enable notifications first.")
         }
     }
 }

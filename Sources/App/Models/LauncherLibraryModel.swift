@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UserNotifications
 
 @MainActor
 @Observable
@@ -7,6 +8,7 @@ final class LauncherLibraryModel {
     var profiles: [LauncherProfile] = []
     var selectedID: UUID?
     var lastErrorMessage: String?
+    var notificationAuthorizationStatus: UNAuthorizationStatus = .notDetermined
 
     init() {
         refresh()
@@ -67,11 +69,43 @@ final class LauncherLibraryModel {
         }
     }
 
+    func refreshNotificationAuthorizationStatus() async {
+        notificationAuthorizationStatus = await NotificationService.authorizationStatus()
+    }
+
+    func requestNotificationAuthorizationIfNeeded() async {
+        await refreshNotificationAuthorizationStatus()
+        guard notificationAuthorizationStatus == .notDetermined else { return }
+
+        do {
+            _ = try await NotificationService.requestAuthorization()
+            await refreshNotificationAuthorizationStatus()
+        } catch {
+            lastErrorMessage = error.localizedDescription
+        }
+    }
+
+    func requestNotificationAuthorization() async {
+        do {
+            _ = try await NotificationService.requestAuthorization()
+            await refreshNotificationAuthorizationStatus()
+        } catch {
+            lastErrorMessage = error.localizedDescription
+        }
+    }
+
     func sendTestNotification(for profile: LauncherProfile) async {
         do {
-            try await LauncherCoordinator.sendNotification(profileID: profile.id, markActive: true)
+            _ = try await NotificationService.ensureAuthorization(requestIfNeeded: true)
+            try await LauncherCoordinator.sendNotification(
+                profileID: profile.id,
+                markActive: true,
+                requestAuthorizationIfNeeded: false
+            )
+            await refreshNotificationAuthorizationStatus()
             refresh()
         } catch {
+            await refreshNotificationAuthorizationStatus()
             lastErrorMessage = error.localizedDescription
         }
     }

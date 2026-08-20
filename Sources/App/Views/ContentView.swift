@@ -1,77 +1,62 @@
 import SwiftUI
 
+private enum WorkspaceSection: String, CaseIterable, Identifiable {
+    case controls
+    case widgets
+    case notifications
+    case settings
+
+    var id: String { rawValue }
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .controls: "Controls"
+        case .widgets: "Widgets"
+        case .notifications: "Notifications"
+        case .settings: "Settings"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .controls: "switch.2"
+        case .widgets: "square.grid.2x2"
+        case .notifications: "bell.badge"
+        case .settings: "gearshape"
+        }
+    }
+}
+
 struct ContentView: View {
     @Environment(LauncherLibraryModel.self) private var library
-    @State private var editorProfile: LauncherProfile?
-    @State private var showsSettings = false
+    @State private var selection: WorkspaceSection? = .controls
 
     var body: some View {
-        @Bindable var library = library
-
         NavigationSplitView {
-            List(selection: $library.selectedID) {
-                Section("Launchers") {
-                    ForEach(library.profiles) { profile in
-                        LauncherRowView(profile: profile)
-                            .tag(profile.id)
-                            .contextMenu {
-                                Button("Duplicate") {
-                                    library.duplicate(profile)
-                                }
-                                Button("Delete", role: .destructive) {
-                                    library.delete(profile)
-                                }
-                            }
-                    }
-                    .onDelete { offsets in
-                        for offset in offsets {
-                            library.delete(library.profiles[offset])
-                        }
-                    }
+            List(WorkspaceSection.allCases, selection: $selection) { section in
+                Label {
+                    Text(section.title)
+                } icon: {
+                    Image(systemName: section.symbolName)
                 }
+                .tag(section)
             }
             .navigationTitle("Dav Launcher")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        editorProfile = LauncherProfile.makeNew()
-                    } label: {
-                        Label("New Launcher", systemImage: "plus")
-                    }
-                }
-                ToolbarItem(placement: .secondaryAction) {
-                    Button {
-                        showsSettings = true
-                    } label: {
-                        Label("Settings", systemImage: "gearshape")
-                    }
-                }
-            }
         } detail: {
-            if let profile = library.selectedProfile {
-                LauncherDetailView(
-                    profile: profile,
-                    onEdit: { editorProfile = profile }
-                )
-                .id(profile.id)
-            } else {
-                ContentUnavailableView(
-                    "No Launcher Selected",
-                    systemImage: "square.grid.2x2",
-                    description: Text("Create a launcher to start building Control Center and widget actions.")
-                )
+            switch selection ?? .controls {
+            case .controls:
+                ControlsView()
+            case .widgets:
+                WidgetsView()
+            case .notifications:
+                NotificationsView()
+            case .settings:
+                SettingsView(embedded: true)
             }
         }
-        .sheet(item: $editorProfile) { profile in
-            LauncherEditorView(profile: profile) { saved in
-                library.save(saved)
-                editorProfile = nil
-            } onCancel: {
-                editorProfile = nil
-            }
-        }
-        .sheet(isPresented: $showsSettings) {
-            SettingsView()
+        .navigationSplitViewStyle(.balanced)
+        .task {
+            await library.requestNotificationAuthorizationIfNeeded()
         }
         .alert(
             "Error",
@@ -84,24 +69,5 @@ struct ContentView: View {
         } message: {
             Text(library.lastErrorMessage ?? "Unknown error")
         }
-    }
-}
-
-private extension LauncherProfile {
-    static func makeNew() -> LauncherProfile {
-        let id = UUID()
-        return LauncherProfile(
-            id: id,
-            name: "New Launcher",
-            appearance: LauncherAppearance(
-                idle: .init(title: "Ready", symbolName: "bolt", tint: .gray),
-                active: .init(title: "Running", symbolName: "bolt.fill", tint: .blue),
-                success: .init(title: "Done", symbolName: "checkmark.circle.fill", tint: .green),
-                failure: .init(title: "Error", symbolName: "exclamationmark.triangle.fill", tint: .red)
-            ),
-            notification: LauncherNotification(
-                automationToken: "DAV:\(id.uuidString.prefix(8).uppercased())"
-            )
-        )
     }
 }

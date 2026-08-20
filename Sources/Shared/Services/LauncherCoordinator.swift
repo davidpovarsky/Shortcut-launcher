@@ -42,7 +42,11 @@ enum LauncherCoordinator {
         return updated
     }
 
-    static func sendNotification(profileID: UUID, markActive: Bool) async throws {
+    static func sendNotification(
+        profileID: UUID,
+        markActive: Bool,
+        requestAuthorizationIfNeeded: Bool = false
+    ) async throws {
         let profile: LauncherProfile
         if markActive {
             profile = try SharedLauncherStore.updateProfile(id: profileID) { item in
@@ -57,7 +61,10 @@ enum LauncherCoordinator {
         }
 
         do {
-            try await NotificationService.send(profile: profile)
+            try await NotificationService.send(
+                profile: profile,
+                requestAuthorizationIfNeeded: requestAuthorizationIfNeeded
+            )
         } catch {
             if markActive {
                 _ = try? SharedLauncherStore.updateProfile(id: profileID) { item in

@@ -26,6 +26,23 @@ fi
 
 "${ROOT_DIR}/scripts/verify_bundle_ids.sh" "${APP_PATH}" 2>&1 | tee "${LOG_DIR}/bundle-id-verification.log"
 
+log "Verifying embedded extension, assets, and localizations"
+required_paths=(
+  "${APP_PATH}/PlugIns/DavLauncherWidgets.appex"
+  "${APP_PATH}/Assets.car"
+  "${APP_PATH}/en.lproj/Localizable.strings"
+  "${APP_PATH}/he.lproj/Localizable.strings"
+  "${APP_PATH}/PlugIns/DavLauncherWidgets.appex/en.lproj/Localizable.strings"
+  "${APP_PATH}/PlugIns/DavLauncherWidgets.appex/he.lproj/Localizable.strings"
+)
+for required_path in "${required_paths[@]}"; do
+  if [[ ! -e "${required_path}" ]]; then
+    log "ERROR: Required bundle resource missing: ${required_path}"
+    exit 6
+  fi
+  log "OK bundle resource: ${required_path}"
+done
+
 PACKAGE_DIR="${BUILD_DIR}/UnsignedPackage"
 rm -rf "${PACKAGE_DIR}"
 mkdir -p "${PACKAGE_DIR}/Payload"

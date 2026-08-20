@@ -42,6 +42,23 @@ struct LauncherProfile: Identifiable, Codable, Hashable, Sendable {
 }
 
 extension LauncherProfile {
+    static func makeNew() -> LauncherProfile {
+        let id = UUID()
+        return LauncherProfile(
+            id: id,
+            name: "New Launcher",
+            appearance: LauncherAppearance(
+                idle: .init(title: "Ready", symbolName: "bolt", tint: .gray),
+                active: .init(title: "Running", symbolName: "bolt.fill", tint: .blue),
+                success: .init(title: "Done", symbolName: "checkmark.circle.fill", tint: .green),
+                failure: .init(title: "Error", symbolName: "exclamationmark.triangle.fill", tint: .red)
+            ),
+            notification: LauncherNotification(
+                automationToken: "DAV:\(id.uuidString.prefix(8).uppercased())"
+            )
+        )
+    }
+
     static func sampleReading() -> LauncherProfile {
         LauncherProfile(
             name: "Reading Mode",

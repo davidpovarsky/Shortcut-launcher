@@ -10,19 +10,33 @@ enum NotificationService {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
-    static func send(profile: LauncherProfile) async throws {
-        let config = profile.notification
-        guard config.isEnabled else { return }
+    @discardableResult
+    static func ensureAuthorization(requestIfNeeded: Bool) async throws -> UNAuthorizationStatus {
+        var status = await authorizationStatus()
 
-        let settings = await UNUserNotificationCenter.current().notificationSettings()
-        switch settings.authorizationStatus {
+        if status == .notDetermined, requestIfNeeded {
+            _ = try await requestAuthorization()
+            status = await authorizationStatus()
+        }
+
+        switch status {
         case .authorized, .provisional, .ephemeral:
-            break
+            return status
         case .notDetermined, .denied:
             throw LauncherError.notificationsNotAuthorized
         @unknown default:
             throw LauncherError.notificationsNotAuthorized
         }
+    }
+
+    static func send(
+        profile: LauncherProfile,
+        requestAuthorizationIfNeeded: Bool = false
+    ) async throws {
+        let config = profile.notification
+        guard config.isEnabled else { return }
+
+        _ = try await ensureAuthorization(requestIfNeeded: requestAuthorizationIfNeeded)
 
         let content = UNMutableNotificationContent()
         content.title = config.title.isEmpty ? profile.name : config.title
