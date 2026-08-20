@@ -1,0 +1,8 @@
+.DS_Store
+Build/
+Artifacts/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+DavLauncher.xcodeproj/
+!project.yml

@@ -1,0 +1,94 @@
+name: DavLauncher
+options:
+  createIntermediateGroups: true
+  developmentLanguage: en
+  deploymentTarget:
+    iOS: '27.0'
+  xcodeVersion: '27.0'
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    APP_BUNDLE_ID: com.dav.DavLauncher
+    APP_GROUP_ID: group.com.dav.DavLauncher
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.0.0
+    IPHONEOS_DEPLOYMENT_TARGET: '27.0'
+    TARGETED_DEVICE_FAMILY: '1,2'
+    SUPPORTS_MACCATALYST: NO
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+targets:
+  DavLauncher:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/Shared
+      - path: Sources/App
+    resources:
+      - path: Resources/Localization
+      - path: Assets.xcassets
+    dependencies:
+      - target: DavLauncherWidgets
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        PRODUCT_NAME: DavLauncher
+        INFOPLIST_FILE: Config/App-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/DavLauncher.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_PREVIEWS: YES
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+        OTHER_LDFLAGS: $(inherited)
+
+  DavLauncherWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Shared
+      - path: Sources/Widgets
+    resources:
+      - path: Resources/Localization
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).Widgets
+        PRODUCT_NAME: DavLauncherWidgets
+        INFOPLIST_FILE: Config/Widgets-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/DavLauncherWidgets.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        ENABLE_PREVIEWS: YES
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
+  DavLauncherTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/DavLauncherTests
+    dependencies:
+      - target: DavLauncher
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).Tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/DavLauncher.app/DavLauncher
+        BUNDLE_LOADER: $(TEST_HOST)
+
+schemes:
+  DavLauncher:
+    build:
+      targets:
+        DavLauncher: all
+        DavLauncherWidgets: all
+        DavLauncherTests: [test]
+    test:
+      gatherCoverageData: true
+      targets:
+        - name: DavLauncherTests
+    run:
+      config: Debug
+    archive:
+      config: Release

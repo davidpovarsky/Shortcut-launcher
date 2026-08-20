@@ -1,0 +1,55 @@
+name: Package unsigned IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: App bundle identifier
+        required: false
+        default: com.dav.DavLauncher
+      app_group_id:
+        description: App Group identifier
+        required: false
+        default: group.com.dav.DavLauncher
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: xcode-27
+    timeout-minutes: 40
+    env:
+      APP_BUNDLE_ID: ${{ inputs.bundle_id || 'com.dav.DavLauncher' }}
+      APP_GROUP_ID: ${{ inputs.app_group_id || 'group.com.dav.DavLauncher' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static validation
+        run: ./scripts/validate_static.sh
+
+      - name: Bootstrap
+        run: ./scripts/bootstrap.sh
+
+      - name: Diagnostics
+        run: ./scripts/print_diagnostics.sh
+
+      - name: Package unsigned IPA
+        run: ./scripts/build_unsigned_ipa.sh
+
+      - name: Collect diagnostics
+        if: always()
+        run: ./scripts/collect_diagnostics.sh
+
+      - name: Upload IPA and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DavLauncher-IPA-${{ github.run_number }}
+          path: Artifacts/
+          if-no-files-found: error
+          retention-days: 30

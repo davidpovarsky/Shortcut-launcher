@@ -1,0 +1,59 @@
+name: iOS 27 CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-run-package:
+    name: Build, test, run iPad simulator, package IPA
+    runs-on: xcode-27
+    timeout-minutes: 60
+
+    env:
+      APP_BUNDLE_ID: com.dav.DavLauncher
+      APP_GROUP_ID: group.com.dav.DavLauncher
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Static validation
+        run: ./scripts/validate_static.sh
+
+      - name: Bootstrap project
+        run: ./scripts/bootstrap.sh
+
+      - name: Print diagnostics
+        run: ./scripts/print_diagnostics.sh
+
+      - name: Build for iPad simulator
+        run: ./scripts/build_simulator.sh
+
+      - name: Run unit tests
+        run: ./scripts/test.sh
+
+      - name: Install and launch in iPad simulator
+        run: ./scripts/run_simulator.sh
+
+      - name: Build unsigned device IPA
+        run: ./scripts/build_unsigned_ipa.sh
+
+      - name: Collect final diagnostics
+        if: always()
+        run: ./scripts/collect_diagnostics.sh
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DavLauncher-build-${{ github.run_number }}
+          path: |
+            Artifacts/
+          if-no-files-found: warn
+          retention-days: 14
