@@ -2,7 +2,9 @@ name: iOS 27 CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - experiment/system-shortcut-control-center
   pull_request:
   workflow_dispatch:
 

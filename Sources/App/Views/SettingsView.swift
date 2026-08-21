@@ -57,6 +57,55 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Diagnostics") {
+                LabeledContent(
+                    "App Group Container",
+                    value: AppEnvironment.sharedContainerURL == nil ? "MISSING" : "Available"
+                )
+                .foregroundStyle(AppEnvironment.sharedContainerURL == nil ? .red : .primary)
+
+                LabeledContent("Effective App Group", value: AppEnvironment.appGroupID)
+                LabeledContent("Configured App Group", value: AppEnvironment.configuredAppGroupID)
+                LabeledContent("Resolution", value: AppEnvironment.appGroupResolutionDescription)
+
+                if let teamIdentifier = AppEnvironment.sideStoreTeamIdentifier {
+                    LabeledContent("SideStore Team", value: teamIdentifier)
+                }
+
+                Text("Candidates: \(AppEnvironment.appGroupCandidates.joined(separator: ", "))")
+                    .font(.caption2.monospaced())
+                    .textSelection(.enabled)
+
+                if let path = AppEnvironment.sharedContainerURL?.path {
+                    Text(path)
+                        .font(.caption2.monospaced())
+                        .textSelection(.enabled)
+                } else {
+                    Text("The app and WidgetKit extension cannot share profiles or extension logs when this container is missing. The SideStore-ready IPA embeds the App Group entitlement so SideStore can provision it, and the app also checks SideStore's Team-ID-suffixed group name.")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+
+                Text("Files log: \(DiagnosticLog.filesLocationDescription)")
+                    .font(.footnote)
+                    .textSelection(.enabled)
+
+                Text("After testing a Control Center button, reopen Dav Launcher or tap Sync Log to Files. Extension events are written to the App Group first, then mirrored into the app's Documents folder.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Button("Sync Log to Files") {
+                    DiagnosticLog.recordEnvironment("settings.manualLogSync")
+                    DiagnosticLog.syncSharedLogToDocuments()
+                }
+
+                Button("Clear Diagnostic Log", role: .destructive) {
+                    DiagnosticLog.clear()
+                    DiagnosticLog.recordEnvironment("settings.logCleared")
+                    DiagnosticLog.syncSharedLogToDocuments()
+                }
+            }
+
             Section("Shortcuts Callback") {
                 Text("At the end of your Shortcut, add Set Launcher State or Reset Launcher. The action can return the Control Center control to Idle or show Success or Error.")
             }
@@ -74,6 +123,9 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .task {
+            DiagnosticLog.syncSharedLogToDocuments()
+            DiagnosticLog.recordEnvironment("settings.opened")
+            DiagnosticLog.syncSharedLogToDocuments()
             await library.refreshNotificationAuthorizationStatus()
         }
     }

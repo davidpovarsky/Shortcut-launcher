@@ -23,11 +23,44 @@ struct LauncherControlValueProvider: AppIntentControlValueProvider {
     }
 
     func currentValue(configuration: LauncherControlConfigurationIntent) async throws -> LauncherControlValue {
-        guard let launcher = configuration.launcher,
-              let profile = SharedLauncherStore.profile(id: launcher.id) else {
+        let configuredID = configuration.launcher?.id.uuidString ?? "nil"
+        DiagnosticLog.record(
+            "launcherControl.currentValue.begin",
+            details: [
+                "configuredLauncherID": configuredID,
+                "sharedContainerAvailable": String(AppEnvironment.sharedContainerURL != nil)
+            ]
+        )
+
+        guard let launcher = configuration.launcher else {
+            DiagnosticLog.record("launcherControl.currentValue.unconfigured")
             let placeholder = LauncherProfile.sampleReading()
             return Self.value(for: placeholder, isConfigured: false)
         }
+
+        guard let profile = SharedLauncherStore.profile(id: launcher.id) else {
+            DiagnosticLog.record(
+                "launcherControl.currentValue.profileMissing",
+                details: [
+                    "configuredLauncherID": launcher.id.uuidString,
+                    "configuredLauncherName": launcher.name,
+                    "availableProfileIDs": SharedLauncherStore.loadProfiles(seedIfEmpty: false)
+                        .map { $0.id.uuidString }
+                        .joined(separator: ",")
+                ]
+            )
+            let placeholder = LauncherProfile.sampleReading()
+            return Self.value(for: placeholder, isConfigured: false)
+        }
+
+        DiagnosticLog.record(
+            "launcherControl.currentValue.success",
+            details: [
+                "configuredLauncherID": launcher.id.uuidString,
+                "profileName": profile.name,
+                "state": profile.state.rawValue
+            ]
+        )
         return Self.value(for: profile)
     }
 

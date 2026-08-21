@@ -17,12 +17,46 @@ struct ActivateLauncherIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
+        DiagnosticLog.recordEnvironment("ActivateLauncherIntent.perform")
+        DiagnosticLog.record(
+            "activateIntent.enter",
+            details: [
+                "launcherID": launcher.id.uuidString,
+                "launcherName": launcher.name,
+                "sharedContainerAvailable": String(AppEnvironment.sharedContainerURL != nil)
+            ]
+        )
+
         do {
-            _ = try await LauncherCoordinator.activate(profileID: launcher.id)
-        } catch LauncherError.notificationsNotAuthorized {
-            LauncherReloadService.reloadAll()
+            let updated = try await LauncherCoordinator.activate(profileID: launcher.id)
+            DiagnosticLog.record(
+                "activateIntent.success",
+                details: [
+                    "launcherID": launcher.id.uuidString,
+                    "state": updated.state.rawValue
+                ]
+            )
+            DiagnosticLog.syncSharedLogToDocuments()
             return .result()
+        } catch LauncherError.notificationsNotAuthorized {
+            DiagnosticLog.record(
+                "activateIntent.notificationsNotAuthorized",
+                details: ["launcherID": launcher.id.uuidString]
+            )
+            LauncherReloadService.reloadAll()
+            DiagnosticLog.syncSharedLogToDocuments()
+            return .result()
+        } catch {
+            DiagnosticLog.record(
+                "activateIntent.error",
+                details: [
+                    "launcherID": launcher.id.uuidString,
+                    "error": String(describing: error),
+                    "localized": error.localizedDescription
+                ]
+            )
+            DiagnosticLog.syncSharedLogToDocuments()
+            throw error
         }
-        return .result()
     }
 }

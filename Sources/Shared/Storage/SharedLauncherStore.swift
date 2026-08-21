@@ -10,6 +10,13 @@ enum SharedLauncherStore {
               let profiles = try? JSONDecoder().decode([LauncherProfile].self, from: data) else {
             if seedIfEmpty {
                 let samples = [LauncherProfile.sampleReading(), LauncherProfile.sampleLights()]
+                DiagnosticLog.record(
+                    "store.seedSamples",
+                    details: [
+                        "sharedContainerAvailable": String(AppEnvironment.sharedContainerURL != nil),
+                        "ids": samples.map { $0.id.uuidString }.joined(separator: ",")
+                    ]
+                )
                 try? saveProfiles(samples)
                 return samples
             }
@@ -23,6 +30,13 @@ enum SharedLauncherStore {
         let data = try JSONEncoder().encode(profiles)
         let defaults = AppEnvironment.sharedDefaults
         defaults.set(data, forKey: profilesKey)
+        DiagnosticLog.record(
+            "store.saveProfiles",
+            details: [
+                "count": String(profiles.count),
+                "sharedContainerAvailable": String(AppEnvironment.sharedContainerURL != nil)
+            ]
+        )
     }
 
     static func profile(id: UUID) -> LauncherProfile? {
@@ -36,6 +50,14 @@ enum SharedLauncherStore {
     ) throws -> LauncherProfile {
         var profiles = loadProfiles(seedIfEmpty: false)
         guard let index = profiles.firstIndex(where: { $0.id == id }) else {
+            DiagnosticLog.record(
+                "store.updateProfile.notFound",
+                details: [
+                    "requestedID": id.uuidString,
+                    "availableIDs": profiles.map { $0.id.uuidString }.joined(separator: ","),
+                    "sharedContainerAvailable": String(AppEnvironment.sharedContainerURL != nil)
+                ]
+            )
             throw LauncherError.profileNotFound
         }
         mutation(&profiles[index])

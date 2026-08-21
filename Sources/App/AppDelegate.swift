@@ -7,13 +7,34 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        DiagnosticLog.syncSharedLogToDocuments()
+        DiagnosticLog.recordEnvironment("application.didFinishLaunching")
+        DiagnosticLog.syncSharedLogToDocuments()
         return true
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        DiagnosticLog.recordEnvironment("application.didBecomeActive")
+        DiagnosticLog.syncSharedLogToDocuments()
+    }
+
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        DiagnosticLog.record("application.didEnterBackground")
+        DiagnosticLog.syncSharedLogToDocuments()
     }
 
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        DiagnosticLog.record(
+            "notifications.willPresent",
+            details: [
+                "identifier": notification.request.identifier,
+                "title": notification.request.content.title,
+                "body": notification.request.content.body
+            ]
+        )
+        return [.banner, .list, .sound]
     }
 }
