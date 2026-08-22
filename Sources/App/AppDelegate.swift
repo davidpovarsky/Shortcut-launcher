@@ -9,12 +9,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         UNUserNotificationCenter.current().delegate = self
         DiagnosticLog.syncSharedLogToDocuments()
         DiagnosticLog.recordEnvironment("application.didFinishLaunching")
+        SefariaSpotlightLab.ensureIndexedIfEnabled(reason: "application.didFinishLaunching")
         DiagnosticLog.syncSharedLogToDocuments()
         return true
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         DiagnosticLog.recordEnvironment("application.didBecomeActive")
+        SefariaSpotlightLab.ensureIndexedIfEnabled(reason: "application.didBecomeActive")
         DiagnosticLog.syncSharedLogToDocuments()
     }
 

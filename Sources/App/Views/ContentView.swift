@@ -31,6 +31,10 @@ struct ContentView: View {
     @Environment(LauncherLibraryModel.self) private var library
     @State private var selection: WorkspaceSection? = .controls
 
+    private var activeSection: WorkspaceSection {
+        selection ?? .controls
+    }
+
     var body: some View {
         NavigationSplitView {
             List(WorkspaceSection.allCases, selection: $selection) { section in
@@ -43,18 +47,24 @@ struct ContentView: View {
             }
             .navigationTitle("Dav Launcher")
         } detail: {
-            switch selection ?? .controls {
-            case .controls:
-                ControlsView()
-            case .widgets:
-                WidgetsView()
-            case .notifications:
-                NotificationsView()
-            case .settings:
-                SettingsView(embedded: true)
+            NavigationStack {
+                rootView(for: activeSection)
             }
+            // Recreate the detail navigation stack whenever the sidebar tab changes.
+            // This both refreshes the selected tab's root view and discards any child
+            // destination that was pushed by the previously selected tab.
+            .id(activeSection)
         }
         .navigationSplitViewStyle(.balanced)
+        .onChange(of: selection) { oldValue, newValue in
+            DiagnosticLog.record(
+                "workspace.section.changed",
+                details: [
+                    "from": oldValue?.rawValue ?? "nil",
+                    "to": newValue?.rawValue ?? "controls"
+                ]
+            )
+        }
         .task {
             await library.requestNotificationAuthorizationIfNeeded()
         }
@@ -68,6 +78,20 @@ struct ContentView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(library.lastErrorMessage ?? "Unknown error")
+        }
+    }
+
+    @ViewBuilder
+    private func rootView(for section: WorkspaceSection) -> some View {
+        switch section {
+        case .controls:
+            ControlsView()
+        case .widgets:
+            WidgetsView()
+        case .notifications:
+            NotificationsView()
+        case .settings:
+            SettingsView(embedded: true)
         }
     }
 }

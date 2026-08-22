@@ -9,9 +9,10 @@ enum AppEnvironment {
     }
 
     /// The unsigned/ad-hoc CI build uses the original App Group identifier,
-    /// while SideStore appends the current Team ID when it provisions the app
-    /// (for example: group.com.dav.DavLauncher.NA6HPWARQ2).
-    /// Try both forms so the same binary works in Xcode and after SideStore.
+    /// while SideStore appends the current Team ID when it provisions the app.
+    /// The extension bundle IDs may contain an extra component before that suffix,
+    /// for example `com.dav.DavLauncher.SefariaPreview.NA6HPWARQ2`, so resolve the
+    /// final 10-character component rather than assuming the first suffix component.
     static var appGroupCandidates: [String] {
         var candidates = [configuredAppGroupID]
         if let teamIdentifier = sideStoreTeamIdentifier {
@@ -39,19 +40,19 @@ enum AppEnvironment {
         let remainder = String(installedBundleIdentifier.dropFirst(baseBundleIdentifier.count))
         guard remainder.hasPrefix(".") else { return nil }
 
-        let firstComponent = remainder
+        let components = remainder
             .dropFirst()
             .split(separator: ".", omittingEmptySubsequences: true)
-            .first
             .map(String.init)
 
-        guard let candidate = firstComponent,
-              candidate.count == 10,
-              candidate.unicodeScalars.allSatisfy({ CharacterSet.alphanumerics.contains($0) }) else {
-            return nil
-        }
+        return components.reversed().first(where: isLikelySideStoreTeamIdentifier)
+    }
 
-        return candidate
+    private static func isLikelySideStoreTeamIdentifier(_ candidate: String) -> Bool {
+        guard candidate.count == 10 else { return false }
+        return candidate.unicodeScalars.allSatisfy {
+            CharacterSet.uppercaseLetters.contains($0) || CharacterSet.decimalDigits.contains($0)
+        }
     }
 
     private static var resolvedSharedContainer: (id: String, url: URL)? {
@@ -99,8 +100,16 @@ enum AppEnvironment {
         if isMainAppProcess {
             return "main-app"
         }
-        if Bundle.main.bundleURL.pathExtension == "appex" {
+
+        let bundleID = Bundle.main.bundleIdentifier ?? ""
+        if bundleID.contains("SefariaPreview") {
+            return "quicklook-sefaria-preview-extension"
+        }
+        if bundleID.contains("Widgets") {
             return "widget-extension"
+        }
+        if Bundle.main.bundleURL.pathExtension == "appex" {
+            return "app-extension"
         }
         return "unknown-extension"
     }

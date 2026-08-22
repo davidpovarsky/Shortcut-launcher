@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - experiment/system-shortcut-control-center
+      - experiment/app-intent-system-pickers
+      - experiment/spotlight-sefaria-quicklook
   pull_request:
   workflow_dispatch:
 

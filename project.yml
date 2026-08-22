@@ -34,6 +34,8 @@ targets:
     dependencies:
       - target: DavLauncherWidgets
         embed: true
+      - target: DavLauncherSefariaPreview
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
@@ -65,6 +67,28 @@ targets:
         ENABLE_PREVIEWS: YES
         DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
 
+  DavLauncherSefariaPreview:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Shared/Configuration/AppEnvironment.swift
+      - path: Sources/Shared/Services/DiagnosticLog.swift
+      - path: Sources/Shared/Services/SpotlightItemLab.swift
+      - path: Sources/Shared/Services/SpotlightSefariaLab.swift
+      - path: Sources/QuickLookPreview
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).SefariaPreview
+        PRODUCT_NAME: DavLauncherSefariaPreview
+        PRODUCT_MODULE_NAME: DavLauncherSefariaPreview
+        INFOPLIST_FILE: Config/SefariaPreview-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/DavLauncherSefariaPreview.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        ENABLE_PREVIEWS: YES
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
   DavLauncherTests:
     type: bundle.unit-test
     platform: iOS
@@ -85,6 +109,7 @@ schemes:
       targets:
         DavLauncher: all
         DavLauncherWidgets: all
+        DavLauncherSefariaPreview: all
         DavLauncherTests: [test]
     test:
       gatherCoverageData: true
