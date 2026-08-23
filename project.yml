@@ -36,6 +36,12 @@ targets:
         embed: true
       - target: DavLauncherSefariaPreview
         embed: true
+      - target: DavLauncherShareCompact
+        embed: true
+      - target: DavLauncherShareMedium
+        embed: true
+      - target: DavLauncherShareExpanded
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
@@ -89,6 +95,69 @@ targets:
         ENABLE_PREVIEWS: YES
         DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
 
+  DavLauncherShareCompact:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Shared/Configuration/AppEnvironment.swift
+      - path: Sources/Shared/Services/DiagnosticLog.swift
+      - path: Sources/ShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).ShareCompact
+        PRODUCT_NAME: DavLauncherShareCompact
+        PRODUCT_MODULE_NAME: DavLauncherShareCompact
+        INFOPLIST_FILE: Config/ShareLab-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/DavLauncherShare.entitlements
+        SHARE_DISPLAY_NAME: Dav Compact
+        SHARE_LAB_MODE: compact
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
+  DavLauncherShareMedium:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Shared/Configuration/AppEnvironment.swift
+      - path: Sources/Shared/Services/DiagnosticLog.swift
+      - path: Sources/ShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).ShareMedium
+        PRODUCT_NAME: DavLauncherShareMedium
+        PRODUCT_MODULE_NAME: DavLauncherShareMedium
+        INFOPLIST_FILE: Config/ShareLab-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/DavLauncherShare.entitlements
+        SHARE_DISPLAY_NAME: Dav Medium
+        SHARE_LAB_MODE: medium
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
+  DavLauncherShareExpanded:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Shared/Configuration/AppEnvironment.swift
+      - path: Sources/Shared/Services/DiagnosticLog.swift
+      - path: Sources/ShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).ShareExpanded
+        PRODUCT_NAME: DavLauncherShareExpanded
+        PRODUCT_MODULE_NAME: DavLauncherShareExpanded
+        INFOPLIST_FILE: Config/ShareLab-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/DavLauncherShare.entitlements
+        SHARE_DISPLAY_NAME: Dav Expanded
+        SHARE_LAB_MODE: expanded
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
   DavLauncherTests:
     type: bundle.unit-test
     platform: iOS
@@ -110,6 +179,9 @@ schemes:
         DavLauncher: all
         DavLauncherWidgets: all
         DavLauncherSefariaPreview: all
+        DavLauncherShareCompact: all
+        DavLauncherShareMedium: all
+        DavLauncherShareExpanded: all
         DavLauncherTests: [test]
     test:
       gatherCoverageData: true

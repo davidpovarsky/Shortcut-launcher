@@ -102,6 +102,15 @@ enum AppEnvironment {
         }
 
         let bundleID = Bundle.main.bundleIdentifier ?? ""
+        if bundleID.contains("ShareCompact") {
+            return "share-compact-extension"
+        }
+        if bundleID.contains("ShareMedium") {
+            return "share-medium-extension"
+        }
+        if bundleID.contains("ShareExpanded") {
+            return "share-expanded-extension"
+        }
         if bundleID.contains("SefariaPreview") {
             return "quicklook-sefaria-preview-extension"
         }
