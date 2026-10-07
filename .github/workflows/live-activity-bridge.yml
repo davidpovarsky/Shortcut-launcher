@@ -6,7 +6,6 @@ on:
       - "iOS 27 CI"
       - "Package unsigned IPA"
     types:
-      - requested
       - in_progress
       - completed
 
