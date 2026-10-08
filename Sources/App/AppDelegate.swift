@@ -1,6 +1,8 @@
+import CoreSpotlight
 import UIKit
 import UserNotifications
 
+@MainActor
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
         _ application: UIApplication,
@@ -23,6 +25,30 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func applicationDidEnterBackground(_ application: UIApplication) {
         DiagnosticLog.record("application.didEnterBackground")
         DiagnosticLog.syncSharedLogToDocuments()
+    }
+
+    func application(
+        _ application: UIApplication,
+        willContinueUserActivityWithType userActivityType: String
+    ) -> Bool {
+        guard userActivityType == CSQueryContinuationActionType else { return false }
+        DiagnosticLog.record("spotlight.searchContinuation.willContinue")
+        return true
+    }
+
+    func application(
+        _ application: UIApplication,
+        continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([any UIUserActivityRestoring]?) -> Void
+    ) -> Bool {
+        let handled = SpotlightSearchCoordinator.shared.receive(
+            userActivity: userActivity,
+            source: .appDelegate
+        )
+        if handled {
+            restorationHandler(nil)
+        }
+        return handled
     }
 
     nonisolated func userNotificationCenter(

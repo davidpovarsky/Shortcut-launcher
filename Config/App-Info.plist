@@ -27,6 +27,8 @@
     <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>LauncherAppGroupIdentifier</key>
     <string>$(APP_GROUP_ID)</string>
+    <key>CoreSpotlightContinuation</key>
+    <true/>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>UIFileSharingEnabled</key>
