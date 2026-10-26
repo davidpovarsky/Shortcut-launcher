@@ -42,6 +42,8 @@ targets:
         embed: true
       - target: DavLauncherShareExpanded
         embed: true
+      - target: DavLauncherAction
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
@@ -158,6 +160,25 @@ targets:
         APPLICATION_EXTENSION_API_ONLY: YES
         DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
 
+  DavLauncherAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Shared/Configuration/AppEnvironment.swift
+      - path: Sources/Shared/Services/DiagnosticLog.swift
+      - path: Sources/ShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).Action
+        PRODUCT_NAME: DavLauncherAction
+        PRODUCT_MODULE_NAME: DavLauncherAction
+        INFOPLIST_FILE: Config/ActionLab-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/DavLauncherShare.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
   DavLauncherTests:
     type: bundle.unit-test
     platform: iOS
@@ -182,6 +203,7 @@ schemes:
         DavLauncherShareCompact: all
         DavLauncherShareMedium: all
         DavLauncherShareExpanded: all
+        DavLauncherAction: all
         DavLauncherTests: [test]
     test:
       gatherCoverageData: true
