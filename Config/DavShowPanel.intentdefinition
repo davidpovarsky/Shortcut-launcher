@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>INEnums</key><array/>
+<key>INTypes</key><array/>
+<key>INIntentDefinitionModelVersion</key><string>1.2</string>
+<key>INIntentDefinitionNamespace</key><string>DavSiriPanel</string>
+<key>INIntentDefinitionSystemVersion</key><string>24A000</string>
+<key>INIntentDefinitionToolsVersion</key><string>16.3</string>
+<key>INIntentDefinitionToolsBuildVersion</key><string>16E140</string>
+<key>INIntents</key><array><dict>
+<key>INIntentName</key><string>DavShowPanel</string>
+<key>INIntentTitle</key><string>Dav Siri Panel</string>
+<key>INIntentTitleID</key><string>davPanelTitle</string>
+<key>INIntentDescription</key><string>Show a Siri-hosted Dav panel</string>
+<key>INIntentDescriptionID</key><string>davPanelDescription</string>
+<key>INIntentCategory</key><string>generic</string>
+<key>INIntentType</key><string>Custom</string>
+<key>INIntentVerb</key><string>Show</string>
+<key>INIntentConfigurable</key><true/>
+<key>INIntentManagedParameterCombinations</key><dict><key></key><dict>
+<key>INIntentParameterCombinationSupportsBackgroundExecution</key><true/>
+<key>INIntentParameterCombinationUpdatesLinked</key><true/>
+</dict></dict>
+<key>INIntentParameterCombinations</key><dict><key></key><dict>
+<key>INIntentParameterCombinationIsPrimary</key><true/>
+<key>INIntentParameterCombinationSupportsBackgroundExecution</key><true/>
+</dict></dict>
+<key>INIntentResponse</key><dict><key>INIntentResponseCodes</key><array>
+<dict><key>INIntentResponseCodeName</key><string>success</string><key>INIntentResponseCodeSuccess</key><true/></dict>
+<dict><key>INIntentResponseCodeName</key><string>failure</string></dict>
+</array></dict>
+</dict></array></dict></plist>

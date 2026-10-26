@@ -46,6 +46,8 @@ targets:
         embed: true
       - target: DavLauncherSiriPanelUI
         embed: true
+      - target: DavLauncherSiriPanelHandler
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
@@ -186,12 +188,29 @@ targets:
     platform: iOS
     sources:
       - path: Sources/SiriPanelUI
+      - path: Config/DavShowPanel.intentdefinition
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).SiriPanelUI
         PRODUCT_MODULE_NAME: DavLauncherSiriPanelUI
         PRODUCT_NAME: DavLauncherSiriPanelUI
         INFOPLIST_FILE: Config/SiriPanelUI-Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+
+  DavLauncherSiriPanelHandler:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/SiriPanelHandler
+      - path: Config/DavShowPanel.intentdefinition
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).SiriPanelHandler
+        PRODUCT_MODULE_NAME: DavLauncherSiriPanelHandler
+        PRODUCT_NAME: DavLauncherSiriPanelHandler
+        INFOPLIST_FILE: Config/SiriPanelHandler-Info.plist
         GENERATE_INFOPLIST_FILE: NO
         SKIP_INSTALL: YES
         APPLICATION_EXTENSION_API_ONLY: YES
@@ -222,6 +241,7 @@ schemes:
         DavLauncherShareExpanded: all
         DavLauncherAction: all
         DavLauncherSiriPanelUI: all
+        DavLauncherSiriPanelHandler: all
         DavLauncherTests: [test]
     test:
       gatherCoverageData: true
