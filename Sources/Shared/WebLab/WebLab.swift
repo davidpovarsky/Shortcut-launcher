@@ -1,4 +1,4 @@
-import Foundation
+﻿import Foundation
 import AppIntents
 import Network
 import ActivityKit
@@ -81,16 +81,16 @@ final class WebLabServer: @unchecked Sendable {
     static let page = #"""
 <!doctype html><html lang="he" dir="rtl"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dav Web Lab</title><style>body{font:17px system-ui;background:#101a32;color:white;padding:22px}button{background:#69d6c7;border:0;border-radius:12px;padding:13px;margin:6px;font-size:16px}pre{white-space:pre-wrap;background:#24314b;padding:14px;border-radius:12px}h1{font-size:27px}</style>
-<h1>Dav Launcher · Web Lab</h1><p>שרת HTTP מקומי — ניסוי 120 שניות</p><button onclick="ping()">בדוק חיבור</button><button onclick="logs()">הצג יומן</button><button onclick="count++;document.querySelector('#counter').textContent=count">לחצן אינטראקטיבי</button>
-<p>לחיצות: <b id="counter">0</b></p><pre id="result">ממתין...</pre>
+<h1>Dav Launcher Â· Web Lab</h1><p>×©×¨×ª HTTP ×ž×§×•×ž×™ â€” × ×™×¡×•×™ 120 ×©× ×™×•×ª</p><button onclick="ping()">×‘×“×•×§ ×—×™×‘×•×¨</button><button onclick="logs()">×”×¦×’ ×™×•×ž×Ÿ</button><button onclick="count++;document.querySelector('#counter').textContent=count">×œ×—×¦×Ÿ ××™× ×˜×¨××§×˜×™×‘×™</button>
+<p>×œ×—×™×¦×•×ª: <b id="counter">0</b></p><pre id="result">×ž×ž×ª×™×Ÿ...</pre>
 <script>let count=0;async function ping(){try{let r=await fetch('/health?x='+Date.now());document.querySelector('#result').textContent=await r.text()}catch(e){document.querySelector('#result').textContent='FAILED: '+e}}async function logs(){try{document.querySelector('#result').textContent=await(await fetch('/log?x='+Date.now())).text()}catch(e){document.querySelector('#result').textContent='FAILED: '+e}}setInterval(ping,10000);ping()</script></html>
 """#
 }
 
 struct StartWebLabIntent: AppIntent {
-    static var title: LocalizedStringResource = "LAB Start Local Web Server"
+    static let title: LocalizedStringResource = "LAB Start Local Web Server"
     static var description = IntentDescription("Start a 120-second localhost HTTP experiment with a Live Activity if supported.")
-    static var openAppWhenRun: Bool = false
+    static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
         do {
@@ -118,9 +118,10 @@ struct StartWebLabIntent: AppIntent {
 }
 
 struct WebLabLogIntent: AppIntent {
-    static var title: LocalizedStringResource = "LAB Read Web Server Log"
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "LAB Read Web Server Log"
+    static let openAppWhenRun: Bool = false
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
         .result(value: WebLabLog.read())
     }
 }
+
