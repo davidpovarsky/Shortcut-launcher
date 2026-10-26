@@ -2,6 +2,7 @@ import AppIntents
 
 struct DavLauncherAppShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
+        AppShortcut(intent: StartWebLabIntent(), phrases: ["Start web lab with \(.applicationName)"], shortTitle: "LAB Web Server", systemImageName: "network")
         AppShortcut(
             intent: SetLauncherStateIntent(),
             phrases: ["Set a launcher state with \(.applicationName)"],
