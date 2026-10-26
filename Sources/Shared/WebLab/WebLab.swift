@@ -89,7 +89,7 @@ final class WebLabServer: @unchecked Sendable {
 
 struct StartWebLabIntent: AppIntent {
     static let title: LocalizedStringResource = "LAB Start Local Web Server"
-    static var description = IntentDescription("Start a 120-second localhost HTTP experiment with a Live Activity if supported.")
+    static let description = IntentDescription("Start a 120-second localhost HTTP experiment with a Live Activity if supported.")
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
@@ -124,4 +124,5 @@ struct WebLabLogIntent: AppIntent {
         .result(value: WebLabLog.read())
     }
 }
+
 
