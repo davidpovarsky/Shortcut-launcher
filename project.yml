@@ -27,6 +27,7 @@ targets:
     sources:
       - path: Sources/Shared
       - path: Sources/App
+      - path: Config/DavShowPanel.intentdefinition
       - path: Resources/Localization
         buildPhase: resources
       - path: Assets.xcassets

@@ -1,4 +1,5 @@
 import CoreSpotlight
+import Intents
 import UIKit
 import UserNotifications
 
@@ -13,6 +14,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         DiagnosticLog.recordEnvironment("application.didFinishLaunching")
         SefariaSpotlightLab.ensureIndexedIfEnabled(reason: "application.didFinishLaunching")
         DiagnosticLog.syncSharedLogToDocuments()
+        SiriPanelDonation.donate()
         return true
     }
 
