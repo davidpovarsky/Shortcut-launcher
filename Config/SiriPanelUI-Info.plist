@@ -12,5 +12,3 @@
 <key>NSExtensionPrincipalClass</key><string>$(PRODUCT_MODULE_NAME).SiriPanelViewController</string>
 <key>NSExtensionAttributes</key><dict><key>IntentsSupported</key><array><string>DavShowPanelIntent</string></array></dict>
 </dict></dict></plist>
-
-[executed on device: david_and_goldy (716fa3ba-b863-4996-9856-fd5b54653fe5)]
