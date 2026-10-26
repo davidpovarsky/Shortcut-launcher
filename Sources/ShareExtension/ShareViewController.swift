@@ -45,7 +45,7 @@ final class ShareViewController: UIViewController {
     }
 
     private lazy var mode: Mode = {
-        let raw = Bundle.main.object(forInfoDictionaryKey: "ShareLabMode") as? String
+        let raw = Bundle(for: ShareViewController.self).object(forInfoDictionaryKey: "ShareLabMode") as? String
         return Mode(rawValue: raw ?? "") ?? .medium
     }()
 
