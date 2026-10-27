@@ -32,6 +32,8 @@ targets:
         buildPhase: resources
       - path: Assets.xcassets
         buildPhase: resources
+      - path: Resources/LabVideos
+        buildPhase: resources
     dependencies:
       - target: DavLauncherWidgets
         embed: true

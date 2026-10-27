@@ -101,3 +101,29 @@ If the user cancels, the intent stops with a system cancellation; no value
 is returned. The transient picker entities are cached in App Group defaults
 per invocation for system entity resolution and removed when the action ends;
 stale cache entries expire after one hour.
+
+## LAB: Generate Object Types (iPadOS 27)
+
+Create a Shortcut with two actions:
+1. **DavLauncher → LAB: Generate Object Types**. Select **Object Type** from the system dropdown.
+2. **Shortcuts → Choose from List** and connect the first action's output.
+
+No input JSON or sample data required. The action returns homogeneous arrays of
+real values (wrapped in an App Intents UnionValue, one case per invocation).
+Examples: rich AppEntity, IntentPerson, vCard IntentFile, PNG IntentFile,
+PlaceDescriptor, .ics files with VEVENT or VTODO, PDF, WAV audio, MP4 video,
+URL, LinkMetadata, AttributedString, String, numeric/date/duration/measurement
+types, PersonNameComponents, and IntentCurrencyAmount/IntentPaymentMethod.
+
+**Important differences:** AppEntity is not Actions' private MenuItem. vCard
+is a FILE, not necessarily a Contact object to the Shortcuts list renderer.
+PDFs, images, audio, videos, and .ics are valid standalone FILES with matching
+content; they are not native Photo Library PHAsset, Calendar Event, Reminder,
+or Music Library objects. The selector includes unsupported system-owned or
+contextual object types and clearly labels their output as *unavailable* rather
+than silently substituting fake objects.
+
+This is an observation/testing tool: do not claim that passing values through
+UnionValue retains their native visual presentation until each mode has been
+tested with Choose from List on an iPad. No library or account objects are
+written, and samples are synthetic.

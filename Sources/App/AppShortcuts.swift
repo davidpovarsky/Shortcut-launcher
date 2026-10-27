@@ -41,10 +41,10 @@ struct DavLauncherAppShortcuts: AppShortcutsProvider {
             systemImageName: "square.grid.2x2"
         )
         AppShortcut(
-            intent: ExperimentalRuntimeDisambiguationIntent(),
-            phrases: ["Test disambiguation with \(.applicationName)"],
-            shortTitle: "LAB Disambiguation",
-            systemImageName: "list.bullet.rectangle"
+            intent: ObjectTypeLabIntent(),
+            phrases: ["Test object types with \(.applicationName)"],
+            shortTitle: "LAB Object Types",
+            systemImageName: "square.stack.3d.up"
         )
         AppShortcut(
             intent: ShowMixedMenuIntent(),
