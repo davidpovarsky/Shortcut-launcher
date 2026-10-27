@@ -41,12 +41,6 @@ struct DavLauncherAppShortcuts: AppShortcutsProvider {
             systemImageName: "square.grid.2x2"
         )
         AppShortcut(
-            intent: ExperimentalRuntimeRequestValueIntent(),
-            phrases: ["Test runtime prompt with \(.applicationName)"],
-            shortTitle: "LAB Runtime Prompt",
-            systemImageName: "text.cursor"
-        )
-        AppShortcut(
             intent: ExperimentalRuntimeDisambiguationIntent(),
             phrases: ["Test disambiguation with \(.applicationName)"],
             shortTitle: "LAB Disambiguation",
