@@ -27,6 +27,7 @@ enum ObjectTypeLabKind: String, AppEnum, CaseIterable {
     case videoFile
     case articleURL
     case linkMetadata
+    case customLinkMetadata
     case plainURL
     case formattedText
     case plainText
@@ -69,6 +70,7 @@ enum ObjectTypeLabKind: String, AppEnum, CaseIterable {
         .videoFile: "Video - MP4 files",
         .articleURL: "Article - URLs, not WFArticle",
         .linkMetadata: "LinkMetadata - web links",
+        .customLinkMetadata: "Custom LinkMetadata - local images",
         .plainURL: "URL - web addresses",
         .formattedText: "AttributedString - rich text",
         .plainText: "String - plain text",
@@ -245,6 +247,8 @@ enum ObjectTypeLabFactory {
                 URL(string: "https://www.bbc.com/news")!,
                 URL(string: "https://en.wikipedia.org/wiki/Apple_Inc.")!
             ].map { .url($0) }
+        case .customLinkMetadata:
+            return await CustomLinkMetadataSamples.make().map { .link($0) }
         case .linkMetadata:
             return [
                 "https://www.apple.com",
