@@ -28,6 +28,8 @@ enum ObjectTypeLabKind: String, AppEnum, CaseIterable {
     case articleURL
     case linkMetadata
     case customLinkMetadata
+    case customLinkMetadataDirect
+    case customLinkMetadataLegacy
     case plainURL
     case formattedText
     case plainText
@@ -71,6 +73,8 @@ enum ObjectTypeLabKind: String, AppEnum, CaseIterable {
         .articleURL: "Article - URLs, not WFArticle",
         .linkMetadata: "LinkMetadata - web links",
         .customLinkMetadata: "Custom LinkMetadata - local images",
+        .customLinkMetadataDirect: "Custom Link - direct local media",
+        .customLinkMetadataLegacy: "Custom Link - LPLinkMetadata bridge",
         .plainURL: "URL - web addresses",
         .formattedText: "AttributedString - rich text",
         .plainText: "String - plain text",
@@ -249,6 +253,10 @@ enum ObjectTypeLabFactory {
             ].map { .url($0) }
         case .customLinkMetadata:
             return await CustomLinkMetadataSamples.make().map { .link($0) }
+        case .customLinkMetadataDirect:
+            return await CustomLinkMetadataSamples.makeDirectComparison().map { .link($0) }
+        case .customLinkMetadataLegacy:
+            return await CustomLinkMetadataSamples.makeLegacyComparison().map { .link($0) }
         case .linkMetadata:
             return [
                 "https://www.apple.com",

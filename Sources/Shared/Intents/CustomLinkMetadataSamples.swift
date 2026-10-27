@@ -48,7 +48,7 @@ enum CustomLinkMetadataSamples {
         return entries.map { card in
             // A real valid URL, intentionally never fetched. The query string
             // distinguishes the three cards while preserving the same host.
-            let url = URL(string: "https://example.com/?davlauncher-card=\(card.id)")!
+            let url = URL(string: "https://www.apple.com/?davlauncher-card=\(card.id)")!
             var metadata = LinkMetadata(url: url)
             metadata.title = card.title
             metadata.setMedia(Image(uiImage: coverImage(for: card)), for: .image)
@@ -109,6 +109,52 @@ enum CustomLinkMetadataSamples {
             )
             symbol?.withTintColor(card.foreground, renderingMode: .alwaysOriginal)
                 .draw(in: CGRect(x: 30, y: 30, width: 68, height: 68))
+        }
+    }
+}
+
+
+extension CustomLinkMetadataSamples {
+    /// Direct LinkMetadata route, using the artwork made in the existing lab.
+    static func makeDirectComparison() -> [LinkMetadata] {
+        make()
+    }
+
+    /// Convert manually constructed legacy metadata to App Intents LinkMetadata.
+    /// This tests whether NSItemProvider image attachments survive the bridge.
+    static func makeLegacyComparison() -> [LinkMetadata] {
+        let entries = [
+            Card(
+                id: "settings", title: "הגדרות - LEGACY",
+                subtitle: "תמונת כיסוי מקומית - LPLinkMetadata",
+                symbol: "gearshape.fill",
+                foreground: UIColor(red: 0.15, green: 0.39, blue: 0.83, alpha: 1),
+                background: UIColor(red: 0.88, green: 0.93, blue: 1, alpha: 1)
+            ),
+            Card(
+                id: "files", title: "קבצים - LEGACY",
+                subtitle: "תמונת כיסוי מקומית - LPLinkMetadata",
+                symbol: "folder.fill",
+                foreground: UIColor(red: 0.78, green: 0.39, blue: 0.08, alpha: 1),
+                background: UIColor(red: 1, green: 0.94, blue: 0.81, alpha: 1)
+            ),
+            Card(
+                id: "favorites", title: "מועדפים - LEGACY",
+                subtitle: "תמונת כיסוי מקומית - LPLinkMetadata",
+                symbol: "star.fill",
+                foreground: UIColor(red: 0.52, green: 0.27, blue: 0.80, alpha: 1),
+                background: UIColor(red: 0.94, green: 0.88, blue: 1, alpha: 1)
+            )
+        ]
+        return entries.compactMap { card -> LinkMetadata? in
+            let url = URL(string: "https://www.apple.com/?davlauncher-legacy=\(card.id)")!
+            let legacy = LPLinkMetadata()
+            legacy.originalURL = url
+            legacy.url = url
+            legacy.title = card.title
+            legacy.imageProvider = NSItemProvider(object: coverImage(for: card))
+            legacy.iconProvider = NSItemProvider(object: iconImage(for: card))
+            return LinkMetadata(legacy)
         }
     }
 }
