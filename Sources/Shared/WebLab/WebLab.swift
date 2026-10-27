@@ -59,6 +59,42 @@ enum WebLabError: LocalizedError {
     }
 }
 
+/// Shared best-effort registry. A stale record is not proof a process is alive.
+enum WebLabRegistry {
+    static let group = "group.com.dav.DavLauncher"
+    static let key = "webLab.owner.v1"
+    static let shutdownKey = "webLab.shutdownRequest.v1"
+
+    struct Owner: Codable {
+        let pid: Int32
+        let session: String
+        let port: UInt16
+        let startedAt: Date
+        let heartbeat: Date
+        let state: String
+    }
+
+    static func read() -> Owner? {
+        guard let data = UserDefaults(suiteName: group)?.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(Owner.self, from: data)
+    }
+
+    static func write(_ owner: Owner) {
+        guard let data = try? JSONEncoder().encode(owner) else { return }
+        UserDefaults(suiteName: group)?.set(data, forKey: key)
+    }
+
+    static func requestShutdown(session: String) {
+        UserDefaults(suiteName: group)?.set(session, forKey: shutdownKey)
+    }
+
+    static func clearIfOwner(session: String) {
+        guard read()?.session == session else { return }
+        UserDefaults(suiteName: group)?.removeObject(forKey: key)
+        UserDefaults(suiteName: group)?.removeObject(forKey: shutdownKey)
+    }
+}
+
 /// A deliberately short-lived localhost-only diagnostic server. Separate app and
 /// App Intent processes will each have their own singleton; this does not keep
 /// the iOS app alive once the system suspends the process.
@@ -176,12 +212,40 @@ final class WebLabServer: @unchecked Sendable {
         queue.sync { URL(string: "http://127.0.0.1:\(currentPort)/")! }
     }
 
+    static func shutdownHTTP(port: UInt16, timeout: TimeInterval = 1) async {
+        guard let url = URL(string: "http://127.0.0.1:\(port)/shutdown") else { return }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = timeout
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            WebLabLog.write("Shutdown HTTP response port=\(port) response=\(response)")
+        } catch {
+            WebLabLog.write("Shutdown HTTP unavailable port=\(port): \(error)")
+        }
+    }
+
     static func ensureHealthy() async throws -> String {
         WebLabLog.write("Recovery: background-only AppIntent pid=\(ProcessInfo.processInfo.processIdentifier)")
-        if let response = try? await healthCheck(timeout: 1.5) {
-            WebLabLog.write("Recovery: reusing existing port 8765")
+        if let owner = WebLabRegistry.read() {
+            WebLabLog.write("Registry owner pid=\(owner.pid) session=\(owner.session) port=\(owner.port) last=\(owner.heartbeat)")
+            if let response = try? await healthCheck(timeout: 1.5, port: owner.port) {
+                WebLabLog.write("Registry owner responsive; reusing port \(owner.port)")
+                return response
+            }
+            WebLabRegistry.requestShutdown(session: owner.session)
+            await shutdownHTTP(port: owner.port)
+            try? await Task.sleep(for: .milliseconds(600))
+            if let response = try? await healthCheck(timeout: 1, port: owner.port) {
+                WebLabLog.write("Owner became responsive; reusing existing instance")
+                return response
+            }
+            WebLabLog.write("Previous owner did not acknowledge shutdown; cannot forcibly terminate a suspended process")
+        } else if let response = try? await healthCheck(timeout: 1.5) {
+            WebLabLog.write("Unregistered existing listener responsive; reusing 8765")
             return response
         }
+
         await shared.resetOwnedListener()
         for port in [UInt16(8765), 8766, 8767, 8768, 8769] {
             do {
@@ -205,6 +269,8 @@ final class WebLabServer: @unchecked Sendable {
             status = "READY on port \(listener?.port?.rawValue ?? 0)"
             startedAt = Date()
             expiresAt = Date().addingTimeInterval(120)
+            updateRegistry(session: session)
+            scheduleHeartbeat(session: session)
             let currentWaiters = waiters
             waiters.removeAll()
             currentWaiters.forEach { $0.resume() }
@@ -222,6 +288,28 @@ final class WebLabServer: @unchecked Sendable {
             status = "setup"
         @unknown default:
             status = "unknown state"
+        }
+    }
+
+    private func updateRegistry(session activeSession: UUID) {
+        guard session == activeSession, isReady else { return }
+        let now = Date()
+        WebLabRegistry.write(.init(pid: processID, session: activeSession.uuidString,
+                                   port: currentPort, startedAt: startedAt ?? now,
+                                   heartbeat: now, state: "ready"))
+    }
+
+    private func scheduleHeartbeat(session activeSession: UUID) {
+        queue.asyncAfter(deadline: .now() + 2) { [weak self] in
+            guard let self, self.session == activeSession, self.isReady else { return }
+            if UserDefaults(suiteName: WebLabRegistry.group)?.string(forKey: WebLabRegistry.shutdownKey)
+                == activeSession.uuidString {
+                WebLabLog.write("Registry shutdown request accepted session=\(activeSession)")
+                self.close(reason: "shared shutdown request", error: WebLabError.serverStopped)
+                return
+            }
+            self.updateRegistry(session: activeSession)
+            self.scheduleHeartbeat(session: activeSession)
         }
     }
 
@@ -255,6 +343,7 @@ final class WebLabServer: @unchecked Sendable {
     private func finishClose(session closingSession: UUID) {
         guard pendingCloseSession == closingSession else { return }
         WebLabLog.write("Listener stopped pid=\(processID) session=\(closingSession) reason=\(pendingCloseReason)")
+        WebLabRegistry.clearIfOwner(session: closingSession.uuidString)
         pendingCloseListener?.stateUpdateHandler = nil
         pendingCloseListener?.newConnectionHandler = nil
         pendingCloseListener = nil
@@ -305,6 +394,15 @@ final class WebLabServer: @unchecked Sendable {
                 contentType = "application/json; charset=utf-8"
                 let elapsed = max(0, Int(Date().timeIntervalSince(self?.startedAt ?? Date())))
                 content = "{\"alive\":true,\"elapsedSeconds\":\(elapsed),\"timestamp\":\"\(ISO8601DateFormatter().string(from: Date()))\"}"
+            } else if path.hasPrefix("/shutdown") {
+                contentType = "application/json; charset=utf-8"
+                content = #"{"shutdown":"requested"}"#
+                if let self, let ownedSession = self.session {
+                    self.queue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                        guard let self, self.session == ownedSession else { return }
+                        self.close(reason: "HTTP shutdown", error: WebLabError.serverStopped)
+                    }
+                }
             } else if path.hasPrefix("/log") {
                 contentType = "text/plain; charset=utf-8"
                 content = WebLabLog.read()
