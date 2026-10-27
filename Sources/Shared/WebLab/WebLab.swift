@@ -75,19 +75,31 @@ final class WebLabServer: @unchecked Sendable {
     private var expiresAt: Date?
     private var status = "not started"
     private var activeConnections: [UUID: NWConnection] = [:]
+    private var closeWaiters: [CheckedContinuation<Void, Never>] = []
+    private var pendingCloseSession: UUID?
+    private var pendingCloseListener: NWListener?
+    private var pendingCloseReason = ""
+    private var closing = false
+    private let processID = ProcessInfo.processInfo.processIdentifier
+    private let processInstance = UUID().uuidString
 
     private init() {}
 
     func snapshot() -> String {
         queue.sync {
             let seconds = expiresAt.map { max(0, Int($0.timeIntervalSinceNow)) } ?? 0
-            return "\(status) | ready=\(isReady) | remaining=\(seconds)s"
+            return "\(status) | pid=\(processID) | session=\(session?.uuidString ?? "none") | ready=\(isReady) | remaining=\(seconds)s"
         }
     }
 
     func start() async throws {
         try await withCheckedThrowingContinuation { continuation in
             queue.async {
+                if self.closing {
+                    WebLabLog.write("Start rejected during listener shutdown pid=\(self.processID)")
+                    continuation.resume(throwing: WebLabError.serverStopped)
+                    return
+                }
                 if self.isReady {
                     WebLabLog.write("Listener already ready in this process")
                     continuation.resume()
@@ -106,10 +118,17 @@ final class WebLabServer: @unchecked Sendable {
                     self.listener = listener
                     self.session = session
                     self.status = "starting"
-                    WebLabLog.write("Creating listener on loopback, TCP port 8765")
+                    WebLabLog.write("Creating listener on loopback, TCP port 8765 pid=\(self.processID) instance=\(self.processInstance) session=\(session)")
 
                     listener.stateUpdateHandler = { [weak self] newState in
-                        guard let self, self.session == session else { return }
+                        guard let self else { return }
+                        if self.pendingCloseSession == session {
+                            if case .cancelled = newState {
+                                self.finishClose(session: session)
+                            }
+                            return
+                        }
+                        guard self.session == session else { return }
                         self.didChangeState(newState, session: session)
                     }
                     listener.newConnectionHandler = { [weak self] connection in
@@ -131,48 +150,48 @@ final class WebLabServer: @unchecked Sendable {
     }
 
     func stop() {
-        queue.async {
-            guard self.listener != nil else {
-                WebLabLog.write("Stop requested; no listener owned by this process")
-                return
-            }
-            self.close(reason: "manually stopped", error: WebLabError.serverStopped)
-        }
+        queue.async { self.close(reason: "manually stopped", error: WebLabError.serverStopped) }
     }
 
-    /// Recover only listeners and sockets owned by this process.
     func resetOwnedListener() async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             queue.async {
+                self.closeWaiters.append(continuation)
                 if self.listener != nil {
                     self.close(reason: "local recovery reset", error: WebLabError.serverStopped)
-                } else {
-                    WebLabLog.write("Local recovery: no owned listener to reset")
+                } else if !self.closing {
+                    self.completeCloseWaiters()
                 }
-                continuation.resume()
             }
         }
     }
 
-    /// A fixed-port recovery attempt: reuse a responsive server; otherwise
-    /// reset only our own listener and attempt to bind once. A suspended
-    /// separate App Intent process cannot be killed by this process.
+    /// Serialize concurrent recovery invocations even when they come from
+    /// different Swift Tasks in one process. Cross-process ownership still
+    /// requires a responsive existing listener or an OS-supported host action.
+    private static let recoveryLock = NSLock()
+    private static var recoveryBusy = false
+
     static func ensureHealthy() async throws -> String {
-        WebLabLog.write("Recovery: probing existing port 8765")
+        // Avoid speculative cancellation of a healthy listener.
+        WebLabLog.write("Recovery: probing existing port 8765 pid=\(ProcessInfo.processInfo.processIdentifier)")
         if let response = try? await healthCheck(timeout: 1.5) {
             WebLabLog.write("Recovery: reusing responsive listener")
             return response
         }
-        WebLabLog.write("Recovery: existing port unresponsive; resetting owned listener")
+        WebLabLog.write("Recovery: HTTP check failed, checking owned listener")
         await shared.resetOwnedListener()
+        // Give the socket stack a small bounded interval to publish the
+        // cancelled state before rebinding the same fixed port.
+        try await Task.sleep(for: .milliseconds(120))
         do {
             try await shared.start()
         } catch {
             if let response = try? await healthCheck(timeout: 1.5) {
-                WebLabLog.write("Recovery: another listener became healthy during bind")
+                WebLabLog.write("Recovery: another listener recovered")
                 return response
             }
-            WebLabLog.write("Recovery: cannot reclaim port from another process: \(error)")
+            WebLabLog.write("Recovery: 8765 unavailable after owned listener stopped: \(error)")
             throw error
         }
         return try await healthCheck(timeout: 3)
@@ -207,20 +226,51 @@ final class WebLabServer: @unchecked Sendable {
     }
 
     private func close(reason: String, error: Error) {
-        let oldListener = listener
-        let connections = activeConnections.values
-        activeConnections.removeAll()
-        connections.forEach { $0.cancel() }
-        listener = nil
-        session = nil
+        if closing { return }
+        guard let oldListener = listener, let closingSession = session else {
+            completeCloseWaiters()
+            return
+        }
+        closing = true
+        pendingCloseListener = oldListener
+        pendingCloseSession = closingSession
+        pendingCloseReason = reason
         isReady = false
         expiresAt = nil
-        status = reason
+        status = "stopping: \(reason)"
         let pending = waiters
         waiters.removeAll()
-        oldListener?.cancel()
         pending.forEach { $0.resume(throwing: error) }
-        WebLabLog.write("Listener stopped: \(reason)")
+        for connection in activeConnections.values { connection.cancel() }
+        activeConnections.removeAll()
+        WebLabLog.write("Listener shutdown requested pid=\(processID) session=\(closingSession) reason=\(reason)")
+        oldListener.cancel()
+        queue.asyncAfter(deadline: .now() + 2) { [weak self] in
+            guard let self, self.pendingCloseSession == closingSession else { return }
+            WebLabLog.write("Listener cancellation callback timeout pid=\(self.processID) session=\(closingSession)")
+            self.finishClose(session: closingSession)
+        }
+    }
+
+    private func finishClose(session closingSession: UUID) {
+        guard pendingCloseSession == closingSession else { return }
+        WebLabLog.write("Listener stopped pid=\(processID) session=\(closingSession) reason=\(pendingCloseReason)")
+        pendingCloseListener?.stateUpdateHandler = nil
+        pendingCloseListener?.newConnectionHandler = nil
+        pendingCloseListener = nil
+        pendingCloseSession = nil
+        listener = nil
+        session = nil
+        closing = false
+        status = "stopped: \(pendingCloseReason)"
+        pendingCloseReason = ""
+        completeCloseWaiters()
+    }
+
+    private func completeCloseWaiters() {
+        let callbacks = closeWaiters
+        closeWaiters.removeAll()
+        callbacks.forEach { $0.resume() }
     }
 
     private func accept(_ connection: NWConnection) {

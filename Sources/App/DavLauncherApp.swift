@@ -4,6 +4,7 @@ import SwiftUI
 @main
 struct DavLauncherApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\\.scenePhase) private var scenePhase
     @State private var library = LauncherLibraryModel()
     @StateObject private var spotlightSearchCoordinator = SpotlightSearchCoordinator.shared
     @AppStorage(AppLanguage.storageKey) private var languageRaw = AppLanguage.system.rawValue
@@ -15,6 +16,11 @@ struct DavLauncherApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onChange(of: scenePhase) { _, phase in
+                    if phase != .active {
+                        WebLabServer.shared.stop()
+                    }
+                }
                 .environment(library)
                 .environment(\.locale, language.locale)
                 .environment(\.layoutDirection, language.layoutDirection)
