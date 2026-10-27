@@ -166,7 +166,7 @@ struct ShowMixedMenuIntent: AppIntent {
     var selectedItem: MixedMenuChoiceEntity?
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Choose an item from \(.$menuJSON)")
+        Summary("Choose an item from \(\.$menuJSON)")
     }
 
     init() {}
