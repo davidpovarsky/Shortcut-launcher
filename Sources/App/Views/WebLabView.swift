@@ -20,8 +20,7 @@ struct WebLabView: View {
                     isStarting = true
                     Task {
                         do {
-                            try await WebLabServer.shared.start()
-                            healthResponse = "HTTP OK: " + (try await WebLabServer.healthCheck())
+                            healthResponse = "HTTP OK: " + (try await WebLabServer.ensureHealthy())
                         } catch {
                             healthResponse = "ERROR: \(error)"
                         }
@@ -42,6 +41,23 @@ struct WebLabView: View {
                 Link(destination: WebLabServer.baseURL) {
                     Label("Open interactive HTML page", systemImage: "safari")
                 }
+
+                Button {
+                    isStarting = true
+                    Task {
+                        await WebLabServer.shared.resetOwnedListener()
+                        do {
+                            healthResponse = "HTTP OK: " + (try await WebLabServer.ensureHealthy())
+                        } catch {
+                            healthResponse = "RECOVERY FAILED: \(error)"
+                        }
+                        isStarting = false
+                        refresh()
+                    }
+                } label: {
+                    Label("Reset local server and retry", systemImage: "arrow.clockwise")
+                }
+                .disabled(isStarting)
 
                 Button(role: .destructive) {
                     WebLabServer.shared.stop()
@@ -67,7 +83,7 @@ struct WebLabView: View {
             } header: {
                 Text("Persistent server log")
             } footer: {
-                Text("The App Intent can run in a different system process. If HTTP works here but fails after the Shortcuts action returns, process suspension is the likely cause. A Live Activity does not guarantee a persistent process.")
+                Text("The App Intent may run in a separate process. This app can cancel only its own listeners. If a suspended process owns port 8765, the app cannot kill it; recovery reports the failure instead of claiming success. A Live Activity does not keep the HTTP server alive.")
             }
         }
         .navigationTitle("Web Server Lab")

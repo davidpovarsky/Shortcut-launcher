@@ -74,6 +74,7 @@ final class WebLabServer: @unchecked Sendable {
     private var startedAt: Date?
     private var expiresAt: Date?
     private var status = "not started"
+    private var activeConnections: [UUID: NWConnection] = [:]
 
     private init() {}
 
@@ -131,8 +132,50 @@ final class WebLabServer: @unchecked Sendable {
 
     func stop() {
         queue.async {
+            guard self.listener != nil else {
+                WebLabLog.write("Stop requested; no listener owned by this process")
+                return
+            }
             self.close(reason: "manually stopped", error: WebLabError.serverStopped)
         }
+    }
+
+    /// Recover only listeners and sockets owned by this process.
+    func resetOwnedListener() async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            queue.async {
+                if self.listener != nil {
+                    self.close(reason: "local recovery reset", error: WebLabError.serverStopped)
+                } else {
+                    WebLabLog.write("Local recovery: no owned listener to reset")
+                }
+                continuation.resume()
+            }
+        }
+    }
+
+    /// A fixed-port recovery attempt: reuse a responsive server; otherwise
+    /// reset only our own listener and attempt to bind once. A suspended
+    /// separate App Intent process cannot be killed by this process.
+    static func ensureHealthy() async throws -> String {
+        WebLabLog.write("Recovery: probing existing port 8765")
+        if let response = try? await healthCheck(timeout: 1.5) {
+            WebLabLog.write("Recovery: reusing responsive listener")
+            return response
+        }
+        WebLabLog.write("Recovery: existing port unresponsive; resetting owned listener")
+        await shared.resetOwnedListener()
+        do {
+            try await shared.start()
+        } catch {
+            if let response = try? await healthCheck(timeout: 1.5) {
+                WebLabLog.write("Recovery: another listener became healthy during bind")
+                return response
+            }
+            WebLabLog.write("Recovery: cannot reclaim port from another process: \(error)")
+            throw error
+        }
+        return try await healthCheck(timeout: 3)
     }
 
     private func didChangeState(_ state: NWListener.State, session: UUID) {
@@ -165,6 +208,9 @@ final class WebLabServer: @unchecked Sendable {
 
     private func close(reason: String, error: Error) {
         let oldListener = listener
+        let connections = activeConnections.values
+        activeConnections.removeAll()
+        connections.forEach { $0.cancel() }
         listener = nil
         session = nil
         isReady = false
@@ -185,6 +231,13 @@ final class WebLabServer: @unchecked Sendable {
             WebLabLog.write("Rejected non-loopback peer: \(peer)")
             connection.cancel()
             return
+        }
+        let connectionID = UUID()
+        activeConnections[connectionID] = connection
+        connection.stateUpdateHandler = { [weak self] state in
+            if case .cancelled = state {
+                self?.activeConnections.removeValue(forKey: connectionID)
+            }
         }
         connection.start(queue: queue)
         connection.receive(minimumIncompleteLength: 1, maximumLength: 16384) { [weak self] data, _, _, error in
@@ -220,9 +273,9 @@ final class WebLabServer: @unchecked Sendable {
     }
 
     /// Checks actual HTTP responses, rather than merely the listener's state.
-    static func healthCheck() async throws -> String {
+    static func healthCheck(timeout: TimeInterval = 4) async throws -> String {
         var request = URLRequest(url: URL(string: "http://127.0.0.1:8765/health")!)
-        request.timeoutInterval = 4
+        request.timeoutInterval = timeout
         request.cachePolicy = .reloadIgnoringLocalCacheData
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
@@ -273,8 +326,7 @@ struct StartWebLabIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
         do {
             WebLabLog.write("AppIntent invoked; starting loopback server")
-            try await WebLabServer.shared.start()
-            let result = try await WebLabServer.healthCheck()
+            let result = try await WebLabServer.ensureHealthy()
             WebLabLog.write("AppIntent verified real HTTP connection: \(result)")
             if ActivityAuthorizationInfo().areActivitiesEnabled {
                 do {
