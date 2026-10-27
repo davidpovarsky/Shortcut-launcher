@@ -76,7 +76,7 @@ struct CreateMixedMenuItemsIntent: AppIntent {
     var menuJSON: String
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Create menu items from \(.$menuJSON)")
+        Summary("Create menu items from \(\.$menuJSON)")
     }
 
     init() {}
