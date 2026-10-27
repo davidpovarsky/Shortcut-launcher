@@ -68,6 +68,7 @@ final class WebLabServer: @unchecked Sendable {
 
     private let queue = DispatchQueue(label: "dav.web.lab.listener")
     private var listener: NWListener?
+    private var currentPort: UInt16 = 8765
     private var waiters: [CheckedContinuation<Void, Error>] = []
     private var isReady = false
     private var session: UUID?
@@ -92,7 +93,7 @@ final class WebLabServer: @unchecked Sendable {
         }
     }
 
-    func start() async throws {
+    func start(port: UInt16 = 8765) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             queue.async {
                 if self.closing {
@@ -113,12 +114,13 @@ final class WebLabServer: @unchecked Sendable {
                     // Avoid setting requiredLocalEndpoint AND passing the same
                     // explicit port to NWListener; that combination throws EINVAL.
                     parameters.acceptLocalOnly = true
-                    let listener = try NWListener(using: parameters, on: 8765)
+                    let listener = try NWListener(using: parameters, on: NWEndpoint.Port(rawValue: port)!)
                     let session = UUID()
                     self.listener = listener
+                    self.currentPort = port
                     self.session = session
                     self.status = "starting"
-                    WebLabLog.write("Creating listener on loopback, TCP port 8765 pid=\(self.processID) instance=\(self.processInstance) session=\(session)")
+                    WebLabLog.write("Creating listener on loopback, TCP port \(port) pid=\(self.processID) instance=\(self.processInstance) session=\(session)")
 
                     listener.stateUpdateHandler = { [weak self] newState in
                         guard let self else { return }
@@ -170,29 +172,29 @@ final class WebLabServer: @unchecked Sendable {
     /// different Swift Tasks in one process. Cross-process ownership still
     /// requires a responsive existing listener or an OS-supported host action.
 
+    func ownedURL() -> URL {
+        queue.sync { URL(string: "http://127.0.0.1:\(currentPort)/")! }
+    }
+
     static func ensureHealthy() async throws -> String {
-        // Avoid speculative cancellation of a healthy listener.
-        WebLabLog.write("Recovery: probing existing port 8765 pid=\(ProcessInfo.processInfo.processIdentifier)")
+        WebLabLog.write("Recovery: background-only AppIntent pid=\(ProcessInfo.processInfo.processIdentifier)")
         if let response = try? await healthCheck(timeout: 1.5) {
-            WebLabLog.write("Recovery: reusing responsive listener")
+            WebLabLog.write("Recovery: reusing existing port 8765")
             return response
         }
-        WebLabLog.write("Recovery: HTTP check failed, checking owned listener")
         await shared.resetOwnedListener()
-        // Give the socket stack a small bounded interval to publish the
-        // cancelled state before rebinding the same fixed port.
-        try await Task.sleep(for: .milliseconds(120))
-        do {
-            try await shared.start()
-        } catch {
-            if let response = try? await healthCheck(timeout: 1.5) {
-                WebLabLog.write("Recovery: another listener recovered")
+        for port in [UInt16(8765), 8766, 8767, 8768, 8769] {
+            do {
+                try await shared.start(port: port)
+                let response = try await healthCheck(timeout: 3, port: port)
+                WebLabLog.write("Recovery: verified listener on port \(port)")
                 return response
+            } catch {
+                WebLabLog.write("Recovery: port \(port) unavailable: \(error)")
+                await shared.resetOwnedListener()
             }
-            WebLabLog.write("Recovery: 8765 unavailable after owned listener stopped: \(error)")
-            throw error
         }
-        return try await healthCheck(timeout: 3)
+        throw WebLabError.startupTimeout
     }
 
     private func didChangeState(_ state: NWListener.State, session: UUID) {
@@ -321,8 +323,8 @@ final class WebLabServer: @unchecked Sendable {
     }
 
     /// Checks actual HTTP responses, rather than merely the listener's state.
-    static func healthCheck(timeout: TimeInterval = 4) async throws -> String {
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:8765/health")!)
+    static func healthCheck(timeout: TimeInterval = 4, port: UInt16 = 8765) async throws -> String {
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/health")!)
         request.timeoutInterval = timeout
         request.cachePolicy = .reloadIgnoringLocalCacheData
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -380,7 +382,7 @@ struct StartWebLabIntent: AppIntent {
                 do {
                     _ = try Activity<WebLabActivityAttributes>.request(
                         attributes: WebLabActivityAttributes(startedAt: Date()),
-                        content: ActivityContent(state: .init(status: "HTTP 127.0.0.1:8765"), staleDate: Date().addingTimeInterval(120)),
+                        content: ActivityContent(state: .init(status: WebLabServer.shared.ownedURL().absoluteString), staleDate: Date().addingTimeInterval(120)),
                         pushType: nil
                     )
                     WebLabLog.write("Live Activity request succeeded")
@@ -390,7 +392,7 @@ struct StartWebLabIntent: AppIntent {
             } else {
                 WebLabLog.write("Live Activity unavailable or disabled")
             }
-            return .result(value: WebLabServer.baseURL.absoluteString)
+            return .result(value: WebLabServer.shared.ownedURL().absoluteString)
         } catch {
             WebLabLog.write("AppIntent ERROR: \(error)")
             return .result(value: "ERROR: \(error.localizedDescription)")
