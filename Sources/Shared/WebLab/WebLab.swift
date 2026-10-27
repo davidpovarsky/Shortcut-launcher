@@ -93,7 +93,7 @@ final class WebLabServer: @unchecked Sendable {
     }
 
     func start() async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             queue.async {
                 if self.closing {
                     WebLabLog.write("Start rejected during listener shutdown pid=\(self.processID)")
