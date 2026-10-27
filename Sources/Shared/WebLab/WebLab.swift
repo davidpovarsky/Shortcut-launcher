@@ -366,29 +366,35 @@ setInterval(ping,10000);ping();
 """#
 }
 
-/// App Intents may run outside the foreground app process. Never bind port 8765 here.
-enum WebLabStartRequest {
-    static let key = "webLab.pendingStartRequest"
-    static func enqueue() {
-        UserDefaults(suiteName: "group.com.dav.DavLauncher")?.set(UUID().uuidString, forKey: key)
-    }
-    static func take() -> Bool {
-        let defaults = UserDefaults(suiteName: "group.com.dav.DavLauncher")
-        guard defaults?.string(forKey: key) != nil else { return false }
-        defaults?.removeObject(forKey: key)
-        return true
-    }
-}
-
 struct StartWebLabIntent: AppIntent {
     static let title: LocalizedStringResource = "LAB Start Local Web Server"
-    static let description = IntentDescription("Opens Dav Launcher and requests its foreground app process to own the local server.")
-    static let openAppWhenRun: Bool = true
+    static let description = IntentDescription("Starts localhost HTTP for 120 seconds. Returns URL only after listener is ready and /health responds.")
+    static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
-        WebLabStartRequest.enqueue()
-        WebLabLog.write("AppIntent queued start request; no listener created in intent process pid=\(ProcessInfo.processInfo.processIdentifier)")
-        return .result(value: "Open Dav Launcher to start and verify http://127.0.0.1:8765/")
+        do {
+            WebLabLog.write("AppIntent invoked; starting loopback server")
+            let result = try await WebLabServer.ensureHealthy()
+            WebLabLog.write("AppIntent verified real HTTP connection: \(result)")
+            if ActivityAuthorizationInfo().areActivitiesEnabled {
+                do {
+                    _ = try Activity<WebLabActivityAttributes>.request(
+                        attributes: WebLabActivityAttributes(startedAt: Date()),
+                        content: ActivityContent(state: .init(status: "HTTP 127.0.0.1:8765"), staleDate: Date().addingTimeInterval(120)),
+                        pushType: nil
+                    )
+                    WebLabLog.write("Live Activity request succeeded")
+                } catch {
+                    WebLabLog.write("Live Activity request failed: \(error)")
+                }
+            } else {
+                WebLabLog.write("Live Activity unavailable or disabled")
+            }
+            return .result(value: WebLabServer.baseURL.absoluteString)
+        } catch {
+            WebLabLog.write("AppIntent ERROR: \(error)")
+            return .result(value: "ERROR: \(error.localizedDescription)")
+        }
     }
 }
 
