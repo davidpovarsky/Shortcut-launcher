@@ -169,8 +169,6 @@ final class WebLabServer: @unchecked Sendable {
     /// Serialize concurrent recovery invocations even when they come from
     /// different Swift Tasks in one process. Cross-process ownership still
     /// requires a responsive existing listener or an OS-supported host action.
-    private static let recoveryLock = NSLock()
-    private static var recoveryBusy = false
 
     static func ensureHealthy() async throws -> String {
         // Avoid speculative cancellation of a healthy listener.
