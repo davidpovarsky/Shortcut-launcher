@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 import AppIntents
 import Network
 import ActivityKit
@@ -11,97 +11,278 @@ struct WebLabActivityAttributes: ActivityAttributes {
 }
 
 enum WebLabLog {
-    static func write(_ message: String) {
-        let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.dav.DavLauncher")?.appendingPathComponent("web-lab.log")
-        guard let url else { return }
-        let line = "\(ISO8601DateFormatter().string(from: Date())) \(message)\n"
-        guard let data = line.data(using: .utf8) else { return }
-        if !FileManager.default.fileExists(atPath: url.path) { FileManager.default.createFile(atPath: url.path, contents: nil) }
-        if let handle = try? FileHandle(forWritingTo: url) {
-            defer { try? handle.close() }
-            try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
-        }
+    private static let lock = NSLock()
+
+    private static var fileURL: URL {
+        let manager = FileManager.default
+        let directory = manager.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.com.dav.DavLauncher"
+        ) ?? manager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return directory.appendingPathComponent("dav-web-lab.log")
     }
+
+    static func write(_ message: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = fileURL
+        let text = "\(ISO8601DateFormatter().string(from: Date())) \(message)\n"
+        if !FileManager.default.fileExists(atPath: url.path) {
+            _ = FileManager.default.createFile(atPath: url.path, contents: Data())
+        }
+        guard let handle = try? FileHandle(forWritingTo: url) else { return }
+        defer { try? handle.close() }
+        _ = try? handle.seekToEnd()
+        try? handle.write(contentsOf: Data(text.utf8))
+    }
+
     static func read() -> String {
-        guard let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.dav.DavLauncher")?.appendingPathComponent("web-lab.log") else { return "No log" }
-        return (try? String(contentsOf: url, encoding: .utf8)) ?? "No log yet"
+        lock.lock()
+        defer { lock.unlock() }
+        guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else {
+            return "No server events recorded yet."
+        }
+        return String(content.suffix(12000))
     }
 }
 
+enum WebLabError: LocalizedError {
+    case startupTimeout
+    case serverStopped
+    case invalidHTTPResponse
+
+    var errorDescription: String? {
+        switch self {
+        case .startupTimeout: "Listener did not reach ready within 6 seconds"
+        case .serverStopped: "Listener stopped before becoming ready"
+        case .invalidHTTPResponse: "HTTP /health probe was not HTTP 200 with alive=true"
+        }
+    }
+}
+
+/// A deliberately short-lived localhost-only diagnostic server. Separate app and
+/// App Intent processes will each have their own singleton; this does not keep
+/// the iOS app alive once the system suspends the process.
 final class WebLabServer: @unchecked Sendable {
     static let shared = WebLabServer()
-    private let queue = DispatchQueue(label: "dav.web.lab")
+    static let baseURL = URL(string: "http://127.0.0.1:8765/")!
+
+    private let queue = DispatchQueue(label: "dav.web.lab.listener")
     private var listener: NWListener?
-    private var started: Date?
+    private var waiters: [CheckedContinuation<Void, Error>] = []
+    private var isReady = false
+    private var session: UUID?
+    private var startedAt: Date?
+    private var expiresAt: Date?
+    private var status = "not started"
+
     private init() {}
 
-    func start() throws {
-        if listener != nil { return }
-        let tcp = NWParameters.tcp
-        tcp.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: 8765)
-        let listener = try NWListener(using: tcp, on: 8765)
-        self.listener = listener
-        self.started = Date()
-        listener.stateUpdateHandler = { state in WebLabLog.write("listener: \(state)") }
-        listener.newConnectionHandler = { [weak self] connection in self?.accept(connection) }
-        listener.start(queue: queue)
-        WebLabLog.write("server start requested port=8765")
-        queue.asyncAfter(deadline: .now() + 120) { [weak self] in
-            self?.listener?.cancel()
-            self?.listener = nil
-            WebLabLog.write("server 120-second timeout")
+    func snapshot() -> String {
+        queue.sync {
+            let seconds = expiresAt.map { max(0, Int($0.timeIntervalSinceNow)) } ?? 0
+            return "\(status) | ready=\(isReady) | remaining=\(seconds)s"
         }
+    }
+
+    func start() async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async {
+                if self.isReady {
+                    WebLabLog.write("Listener already ready in this process")
+                    continuation.resume()
+                    return
+                }
+                self.waiters.append(continuation)
+                guard self.listener == nil else { return }
+
+                do {
+                    let parameters = NWParameters.tcp
+                    // Avoid setting requiredLocalEndpoint AND passing the same
+                    // explicit port to NWListener; that combination throws EINVAL.
+                    parameters.acceptLocalOnly = true
+                    let listener = try NWListener(using: parameters, on: 8765)
+                    let session = UUID()
+                    self.listener = listener
+                    self.session = session
+                    self.status = "starting"
+                    WebLabLog.write("Creating listener on loopback, TCP port 8765")
+
+                    listener.stateUpdateHandler = { [weak self] newState in
+                        guard let self, self.session == session else { return }
+                        self.didChangeState(newState, session: session)
+                    }
+                    listener.newConnectionHandler = { [weak self] connection in
+                        self?.accept(connection)
+                    }
+                    listener.start(queue: self.queue)
+
+                    self.queue.asyncAfter(deadline: .now() + 6) { [weak self] in
+                        guard let self, self.session == session, !self.isReady else { return }
+                        WebLabLog.write("Listener startup timed out")
+                        self.close(reason: "startup timeout", error: WebLabError.startupTimeout)
+                    }
+                } catch {
+                    WebLabLog.write("Listener creation ERROR: \(error)")
+                    self.close(reason: "creation failed: \(error)", error: error)
+                }
+            }
+        }
+    }
+
+    func stop() {
+        queue.async {
+            self.close(reason: "manually stopped", error: WebLabError.serverStopped)
+        }
+    }
+
+    private func didChangeState(_ state: NWListener.State, session: UUID) {
+        WebLabLog.write("Listener state: \(state)")
+        switch state {
+        case .ready:
+            isReady = true
+            status = "READY on port \(listener?.port?.rawValue ?? 0)"
+            startedAt = Date()
+            expiresAt = Date().addingTimeInterval(120)
+            let currentWaiters = waiters
+            waiters.removeAll()
+            currentWaiters.forEach { $0.resume() }
+            queue.asyncAfter(deadline: .now() + 120) { [weak self] in
+                guard let self, self.session == session else { return }
+                self.close(reason: "120-second timer expired", error: WebLabError.serverStopped)
+            }
+        case .failed(let error):
+            close(reason: "listener failed: \(error)", error: error)
+        case .cancelled:
+            close(reason: "listener cancelled", error: WebLabError.serverStopped)
+        case .waiting(let error):
+            status = "waiting: \(error)"
+        case .setup:
+            status = "setup"
+        @unknown default:
+            status = "unknown state"
+        }
+    }
+
+    private func close(reason: String, error: Error) {
+        let oldListener = listener
+        listener = nil
+        session = nil
+        isReady = false
+        expiresAt = nil
+        status = reason
+        let pending = waiters
+        waiters.removeAll()
+        oldListener?.cancel()
+        pending.forEach { $0.resume(throwing: error) }
+        WebLabLog.write("Listener stopped: \(reason)")
     }
 
     private func accept(_ connection: NWConnection) {
+        // Even if a platform ignores the interface restriction, never serve
+        // HTTP to a non-loopback peer.
+        let peer = String(describing: connection.endpoint).lowercased()
+        guard peer.contains("127.0.0.1") || peer.contains("::1") else {
+            WebLabLog.write("Rejected non-loopback peer: \(peer)")
+            connection.cancel()
+            return
+        }
         connection.start(queue: queue)
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 16384) { [weak self] data, _, _, _ in
-            let request = String(data: data ?? Data(), encoding: .utf8) ?? ""
-            let path = request.split(separator: " ").dropFirst().first.map(String.init) ?? "/"
-            let body: String
-            let type: String
-            if path.hasPrefix("/health") {
-                type = "application/json"
-                let elapsed = Int(Date().timeIntervalSince(self?.started ?? Date()))
-                body = "{\"alive\":true,\"elapsedSeconds\":\(elapsed),\"timestamp\":\"\(ISO8601DateFormatter().string(from: Date()))\"}"
-            } else if path.hasPrefix("/log") {
-                type = "text/plain; charset=utf-8"
-                body = WebLabLog.read()
-            } else {
-                type = "text/html; charset=utf-8"
-                body = Self.page
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 16384) { [weak self] data, _, _, error in
+            guard self != nil else { connection.cancel(); return }
+            if let error {
+                WebLabLog.write("HTTP receive ERROR: \(error)")
+                connection.cancel()
+                return
             }
-            WebLabLog.write("HTTP \(path)")
-            let bytes = Data(body.utf8)
-            let header = "HTTP/1.1 200 OK\r\nContent-Type: \(type)\r\nContent-Length: \(bytes.count)\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n"
-            connection.send(content: Data(header.utf8) + bytes, completion: .contentProcessed { _ in connection.cancel() })
+            let request = String(decoding: data ?? Data(), as: UTF8.self)
+            let path = request.split(separator: " ").dropFirst().first.map(String.init) ?? "/"
+            let contentType: String
+            let content: String
+            if path.hasPrefix("/health") {
+                contentType = "application/json; charset=utf-8"
+                let elapsed = max(0, Int(Date().timeIntervalSince(self?.startedAt ?? Date())))
+                content = "{\"alive\":true,\"elapsedSeconds\":\(elapsed),\"timestamp\":\"\(ISO8601DateFormatter().string(from: Date()))\"}"
+            } else if path.hasPrefix("/log") {
+                contentType = "text/plain; charset=utf-8"
+                content = WebLabLog.read()
+            } else {
+                contentType = "text/html; charset=utf-8"
+                content = Self.page
+            }
+            WebLabLog.write("HTTP request \(path) from \(peer)")
+            let bytes = Data(content.utf8)
+            let headers = "HTTP/1.1 200 OK\r\nContent-Type: \(contentType)\r\nContent-Length: \(bytes.count)\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n"
+            connection.send(content: Data(headers.utf8) + bytes, completion: .contentProcessed { sendError in
+                if let sendError { WebLabLog.write("HTTP send ERROR: \(sendError)") }
+                connection.cancel()
+            })
         }
     }
+
+    /// Checks actual HTTP responses, rather than merely the listener's state.
+    static func healthCheck() async throws -> String {
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:8765/health")!)
+        request.timeoutInterval = 4
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            throw WebLabError.invalidHTTPResponse
+        }
+        let text = String(decoding: data, as: UTF8.self)
+        guard text.contains("\"alive\":true") else { throw WebLabError.invalidHTTPResponse }
+        WebLabLog.write("HTTP self-check OK: \(text)")
+        return text
+    }
+
     static let page = #"""
-<!doctype html><html lang="he" dir="rtl"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dav Web Lab</title><style>body{font:17px system-ui;background:#101a32;color:white;padding:22px}button{background:#69d6c7;border:0;border-radius:12px;padding:13px;margin:6px;font-size:16px}pre{white-space:pre-wrap;background:#24314b;padding:14px;border-radius:12px}h1{font-size:27px}</style>
-<h1>Dav Launcher Â· Web Lab</h1><p>×©×¨×ª HTTP ×ž×§×•×ž×™ â€” × ×™×¡×•×™ 120 ×©× ×™×•×ª</p><button onclick="ping()">×‘×“×•×§ ×—×™×‘×•×¨</button><button onclick="logs()">×”×¦×’ ×™×•×ž×Ÿ</button><button onclick="count++;document.querySelector('#counter').textContent=count">×œ×—×¦×Ÿ ××™× ×˜×¨××§×˜×™×‘×™</button>
-<p>×œ×—×™×¦×•×ª: <b id="counter">0</b></p><pre id="result">×ž×ž×ª×™×Ÿ...</pre>
-<script>let count=0;async function ping(){try{let r=await fetch('/health?x='+Date.now());document.querySelector('#result').textContent=await r.text()}catch(e){document.querySelector('#result').textContent='FAILED: '+e}}async function logs(){try{document.querySelector('#result').textContent=await(await fetch('/log?x='+Date.now())).text()}catch(e){document.querySelector('#result').textContent='FAILED: '+e}}setInterval(ping,10000);ping()</script></html>
+<!doctype html>
+<html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><title>Dav Web Lab</title>
+<style>
+*{box-sizing:border-box}body{font:17px -apple-system,BlinkMacSystemFont,sans-serif;margin:0;background:#101b36;color:#fff;padding:24px}
+main{max-width:520px;margin:auto}.tag{color:#74e5d2;text-transform:uppercase;letter-spacing:2px;font-size:12px}
+h1{font-size:30px;margin:12px 0}.card{background:#22304d;border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 8px 24px #060c1b55}
+button{background:#74e5d2;color:#101b36;border:0;border-radius:12px;padding:14px 16px;font-weight:700;font-size:15px;margin:4px}
+pre{white-space:pre-wrap;word-break:break-word;background:#141f37;border-radius:12px;padding:14px;min-height:70px;font-size:13px}
+small{color:#a8b4cb}
+</style><main><div class="tag">Dav Launcher / Localhost experiment</div><h1>Web server is responding</h1>
+<div class="card"><b>Live HTTP connection</b><p><small>Health check repeats every 10 seconds. The experiment has a 120-second deadline.</small></p>
+<button onclick="ping()">Check /health</button><button onclick="logs()">Read server log</button>
+<pre id="result">Waiting for response...</pre></div>
+<div class="card"><b>Interactive HTML control</b><p id="counter">Button clicks: 0</p>
+<button onclick="count++;document.getElementById('counter').textContent='Button clicks: '+count">Click me</button></div>
+</main><script>
+let count=0;
+async function ping(){try{
+let r=await fetch('/health?nocache='+Date.now(),{cache:'no-store'});
+document.getElementById('result').textContent='HTTP '+r.status+'\n'+await r.text()
+}catch(e){document.getElementById('result').textContent='Connection FAILED: '+e}}
+async function logs(){try{
+document.getElementById('result').textContent=await(await fetch('/log?nocache='+Date.now(),{cache:'no-store'})).text()
+}catch(e){document.getElementById('result').textContent='Connection FAILED: '+e}}
+setInterval(ping,10000);ping();
+</script></html>
 """#
 }
 
 struct StartWebLabIntent: AppIntent {
     static let title: LocalizedStringResource = "LAB Start Local Web Server"
-    static let description = IntentDescription("Start a 120-second localhost HTTP experiment with a Live Activity if supported.")
+    static let description = IntentDescription("Starts localhost HTTP for 120 seconds. Returns URL only after listener is ready and /health responds.")
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
         do {
-            try WebLabServer.shared.start()
-            WebLabLog.write("AppIntent invoked; requesting Live Activity")
+            WebLabLog.write("AppIntent invoked; starting loopback server")
+            try await WebLabServer.shared.start()
+            let result = try await WebLabServer.healthCheck()
+            WebLabLog.write("AppIntent verified real HTTP connection: \(result)")
             if ActivityAuthorizationInfo().areActivitiesEnabled {
                 do {
                     _ = try Activity<WebLabActivityAttributes>.request(
                         attributes: WebLabActivityAttributes(startedAt: Date()),
-                        content: ActivityContent(state: .init(status: "Testing localhost:8765"), staleDate: Date().addingTimeInterval(120)),
-                        pushType: nil)
+                        content: ActivityContent(state: .init(status: "HTTP 127.0.0.1:8765"), staleDate: Date().addingTimeInterval(120)),
+                        pushType: nil
+                    )
                     WebLabLog.write("Live Activity request succeeded")
                 } catch {
                     WebLabLog.write("Live Activity request failed: \(error)")
@@ -109,10 +290,10 @@ struct StartWebLabIntent: AppIntent {
             } else {
                 WebLabLog.write("Live Activity unavailable or disabled")
             }
-            return .result(value: "http://127.0.0.1:8765/")
+            return .result(value: WebLabServer.baseURL.absoluteString)
         } catch {
-            WebLabLog.write("server start error: \(error)")
-            return .result(value: "ERROR: \(error)")
+            WebLabLog.write("AppIntent ERROR: \(error)")
+            return .result(value: "ERROR: \(error.localizedDescription)")
         }
     }
 }
@@ -124,5 +305,3 @@ struct WebLabLogIntent: AppIntent {
         .result(value: WebLabLog.read())
     }
 }
-
-

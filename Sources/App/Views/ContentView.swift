@@ -5,6 +5,7 @@ private enum WorkspaceSection: String, CaseIterable, Identifiable {
     case widgets
     case notifications
     case settings
+    case webLab
 
     var id: String { rawValue }
 
@@ -14,6 +15,7 @@ private enum WorkspaceSection: String, CaseIterable, Identifiable {
         case .widgets: "Widgets"
         case .notifications: "Notifications"
         case .settings: "Settings"
+        case .webLab: "Web Server Lab"
         }
     }
 
@@ -23,6 +25,7 @@ private enum WorkspaceSection: String, CaseIterable, Identifiable {
         case .widgets: "square.grid.2x2"
         case .notifications: "bell.badge"
         case .settings: "gearshape"
+        case .webLab: "network"
         }
     }
 }
@@ -92,6 +95,8 @@ struct ContentView: View {
             NotificationsView()
         case .settings:
             SettingsView(embedded: true)
+        case .webLab:
+            WebLabView()
         }
     }
 }
