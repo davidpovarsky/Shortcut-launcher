@@ -114,7 +114,6 @@ enum ObjectTypeLabValue {
     case richText(AttributedString)
     case text(String)
     case integer(Int)
-    case decimal(Decimal)
     case date(Date)
     case duration(Duration)
     case boolean(Bool)
@@ -138,7 +137,6 @@ extension ObjectTypeLabValue {
         .richText: "AttributedString",
         .text: "String",
         .integer: "Int",
-        .decimal: "Decimal",
         .date: "Date",
         .duration: "Duration",
         .boolean: "Bool",
@@ -283,14 +281,13 @@ enum ObjectTypeLabFactory {
         case .integer:
             return [1, 42, 2027].map { .integer($0) }
         case .decimal:
-            return [Decimal(string: "3.14")!, Decimal(string: "24.99")!, Decimal(string: "125.50")!]
-                .map { .decimal($0) }
+            return unavailable("Decimal does not compile as a UnionValue case in the current Xcode 27 SDK. IntentCurrencyAmount uses Decimal internally; test its native representation in Currency Amount mode.")
         case .date:
             let epoch = Date(timeIntervalSince1970: 1_800_000_000)
             return [epoch, epoch.addingTimeInterval(86_400), epoch.addingTimeInterval(604_800)]
                 .map { .date($0) }
         case .duration:
-            return [Duration.seconds(30), .minutes(5), .hours(2)].map { .duration($0) }
+            return [Duration.seconds(30), .seconds(300), .seconds(7200)].map { .duration($0) }
         case .boolean:
             return [.boolean(true), .boolean(false)]
         case .personName:
