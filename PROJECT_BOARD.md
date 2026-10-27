@@ -16,6 +16,8 @@ Potential improvements, features, optimizations, or architectural ideas.
 
 Useful technical discoveries, undocumented behavior, shortcuts, implementation tricks, platform behavior, or reusable knowledge discovered while working.
 
+- Runtime system menus: IntentChoiceOption only exposes title and semantic style; for title/subtitle/image rows during an App Intent, requestDisambiguation(among:) with transient AppEntity values is a better fit. Use per-invocation IDs and App Group-backed EntityQuery resolution. Picker appearance remains system-controlled and is not identical to native vCard Contacts or Actions MenuItem.
+
 ## Experiments / Investigations
 
 Things worth testing or researching before deciding whether to implement them.

@@ -52,6 +52,12 @@ struct DavLauncherAppShortcuts: AppShortcutsProvider {
             shortTitle: "LAB Disambiguation",
             systemImageName: "list.bullet.rectangle"
         )
+        AppShortcut(
+            intent: ShowMixedMenuIntent(),
+            phrases: ["Show mixed menu with \(.applicationName)"],
+            shortTitle: "Show Mixed Menu",
+            systemImageName: "list.bullet.rectangle.portrait"
+        )
     }
 
     static let shortcutTileColor: ShortcutTileColor = .blue
