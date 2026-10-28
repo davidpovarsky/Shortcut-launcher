@@ -29,6 +29,8 @@ Things worth testing or researching before deciding whether to implement them.
 
 Important unresolved questions or uncertainties.
 
+- [ ] Can iPadOS 27 Shortcuts continue when a native `requestConfirmation` is denied and the App Intent deliberately catches the thrown cancellation? Check `LAB: Confirmation Back or Next`, then `LAB: Read Confirmation Trace`; compare accepted `next` versus denied `back`. Apple's guidance discourages catching cancellation. Test steps: docs/CONFIRMATION_BACK_NEXT_EXPERIMENT.md.
+
 ## Planned / Todo
 
 Concrete work that is worth doing but is not part of the current task.
