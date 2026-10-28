@@ -27,6 +27,7 @@ struct ShowWebViewSnippetIntent: SnippetIntent {
 
     init() {}
 
+    @MainActor
     func perform() async throws -> some IntentResult & ShowsSnippetView {
         .result(view: LiveWebSnippetView(source: source ?? ""))
     }
