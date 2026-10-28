@@ -185,7 +185,7 @@ final class InternetTimeSnippetMonitor {
     private var initialized = false
     private var pollTask: Task<Void, Never>?
     private var deadline: Date?
-    private(set) var reading: InternetTimeSnippetReading = Self.restore()
+    private(set) var reading: InternetTimeSnippetReading = InternetTimeSnippetMonitor.restore()
 
     private init() {}
 
