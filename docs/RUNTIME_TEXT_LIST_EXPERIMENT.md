@@ -1,42 +1,205 @@
-# Runtime text-list editor — iPadOS Shortcuts A/B experiment
+# Runtime list editor — iPadOS Shortcuts experiment
+
+
+
+
+
+
 
 ## Goal
 
-Test whether \`@Parameter(size: .init(min:max:))\` changes the **runtime** input UI shown by \`requestValue()\` for \`[String]\` into the native list editor the user photographed (add, remove, reorder, Done/Cancel).
 
-This tests a precise hypothesis; App Intents documentation promises bounded collection *configuration*, but **does not guarantee this widget will appear during Shortcuts execution**.
 
-## Discovery and actions
 
-Two separate discoverable actions are included, without adding AppShortcut provider tiles (already at ten):
 
-- **LAB: Runtime Text List (Sized)** — optional \`[String]\` parameter with \`size: .init(min: 1, max: 8)\`; \`perform()\` invokes \`try await $items.requestValue(...)\`, then returns a numbered string with a diagnostic label, preserving ordering and duplicates.
-- **LAB: Runtime Text List (Plain)** — identical optional \`[String]\` and call to \`requestValue\`, **without** \`size:\`, giving a control group on the same device and OS.
 
-The parameter is intentionally optional to avoid mandatory resolution **before** \`perform()\`. In the actual test, \`requestValue\` is always invoked from inside \`perform()\`, so the user can observe the UI precisely at runtime, rather than the editor's parameter configuration UI.
 
-### Test on iPad
+Determine whether the **add / remove / reorder** list editor photographed in Shortcuts can appear **during execution** of a Shortcuts action instead of only when the user configures a widget/action.
 
-1. Install the latest IPA from \`Package unsigned IPA\`.
-2. Build shortcut A: **LAB: Runtime Text List (Sized)** followed by **Show Result** with its magic output.
-3. Launch the Shortcut, **not merely edit its parameters**. Check if a modal with **add/delete/reorder** appears. Enter two values and reorder them if supported.
-4. Check if **Show Result** lists the values in the same order.
-5. Build shortcut B: **LAB: Runtime Text List (Plain)** followed by **Show Result**.
-6. Compare the **runtime** UI between A and B. Note whether the native editor appears, or an unsupported-list error, or another generic value picker.
-7. If a list editor is shown only while configuring an action (before execution), log that separately: it does not solve an AI composer invoked at runtime.
 
-### Expected observations
 
-| Observation | Meaning |
-| --- | --- |
-| Sized shows add/remove/reorder but Plain does not | Evidence that size affects runtime control |
-| Both show same add/remove/reorder UI | Lists work at runtime; size not the decisive factor |
-| Both show different generic prompts | Sized array alone does not unlock editor |
-| Compiler rejects sized primitive String array | Framework's sized-array overload does not support this primitive type; test cannot be shipped exactly as proposed |
 
-This experiment does **not** contain file import or mixed String/IntentFile types; those are later tests only if runtime collection editing works.
 
-References:
-- https://developer.apple.com/documentation/appintents/intentcollectionsize/init(min:max:)
-- https://developer.apple.com/documentation/appintents/intentparameter/requestvalue(_:)
-- https://developer.apple.com/documentation/appintents/adding-parameters-to-an-app-intent
+
+
+## Critical build finding (Xcode 27)
+
+
+
+
+
+
+
+The original proposal — \`@Parameter(size: .init(min:1,max:8)) var items: [String]?\`, then \`try await $items.requestValue()\` — is **not supported by the SDK**.
+
+
+
+
+
+
+
+The first real IPA build, run \`40790051108\`, failed with:
+
+
+
+
+
+
+
+- \`@Parameter(size:)\` overload requires a supported element such as \`AppEntity\` / \`IntentPerson\` rather than primitive \`String\` (Xcode error \`String and IntentPerson be equivalent\`).
+
+
+
+- \`requestValue()\` on \`[String]?\` returns **one \`String\`**, not \`[String]\` (compiler error \`cannot convert String to expected argument type [String]\`).
+
+
+
+
+
+
+
+These are measured compile-time constraints. A string-list editor cannot be summoned by the precise primitive example previously suggested.
+
+
+
+
+
+
+
+## Revised experiments (all should compile)
+
+
+
+
+
+
+
+1. **LAB: Runtime List (Sized Entities)**
+
+
+
+   \`@Parameter(size: .init(min:1,max:8)) var items: [RuntimeListSampleEntity]?\`, and **in perform** call \`$items.requestValue(...)\`. The collection is made of selectable sample \`AppEntity\` values because this is an explicitly supported \`size:\` type. The API returns **one selected entity**, so this tests what prompt appears rather than claiming an editable array result.
+
+
+
+2. **LAB: Runtime Text List (Plain)**
+
+
+
+   \`@Parameter var items: [String]?\`; in perform call \`$items.requestValue(...)\`. The API returns **one \`String\`**, and the output states that clearly.
+
+
+
+3. **LAB: Required Sized List**
+
+
+
+   \`@Parameter(size: .init(min:1,max:8)) var items: [RuntimeListSampleEntity]\` (required, not optional). This is the **only** experiment where the system resolves a whole collection before \`perform()\` and the resulting output lists all selected elements. Test once with the parameter empty at execution, and once by configuring its value in the Shortcut editor.
+
+
+
+
+
+
+
+All actions return diagnostic plain-text output, suitable for a following **Show Result** action. The sample entities are fixed Hebrew titles; this experiment intentionally does not provide free-form text entry or file attachment.
+
+
+
+
+
+
+
+## iPad test
+
+
+
+
+
+
+
+1. Install IPA from the experiment branch, then create **three separate Shortcuts**, each with one of the above LAB actions followed by **Show Result** on its magic output.
+
+
+
+2. Launch **Runtime List (Sized Entities)**. Observe whether \`requestValue\` shows the **add/remove/reorder editor**, a single-choice picker, or a different UI. Do not confuse the editor displayed when configuring the action with a prompt during execution.
+
+
+
+3. Run **Runtime Text List (Plain)**. Observe whether it shows a single text prompt (likely), and whether it returns the entered value.
+
+
+
+4. Run **Required Sized List** with its parameter unset. Check whether the system asks for a complete list at runtime; if the system instead insists you configure the parameter in the action editor, record that behavior.
+
+
+
+5. Edit the **Required Sized List** parameter in the Shortcuts editor and see whether the native add/remove/reorder editor appears *there*. Set two or three entries, change the order, run, and verify the output order.
+
+
+
+
+
+
+
+### What conclusions are justified?
+
+
+
+
+
+
+
+| Observation | Conclusion |
+
+
+
+|---|---|
+
+
+
+| Sized optional requestValue shows a list editor | The editor can potentially be presented at runtime, but requestValue still yields one element |
+
+
+
+| Required sized parameter requests whole list at runtime | Strong evidence that runtime array collection is possible through parameter resolution |
+
+
+
+| List editor is shown **only** in the action editor | The list editor cannot serve as a runtime message composer by this method |
+
+
+
+| Plain [String]? requestValue shows only a text prompt | Consistent with compiler's single-String return type |
+
+
+
+
+
+
+
+This deliberately isolates the system's UI boundaries before investigating mixing text, images and file import for the AI agent.
+
+
+
+
+
+
+
+## Sources
+
+
+
+
+
+
+
+- Apple API for size (limited AppEntity array initializer): https://developer.apple.com/documentation/appintents/intentparameter/init(title:description:default:size:inputconnectionbehavior:)
+
+
+
+- Apple API for requestValue: https://developer.apple.com/documentation/appintents/intentparameter/requestvalue(_:)
+
+
+
+- Xcode failure diagnostic: https://github.com/davidpovarsky/Shortcut-launcher/actions/runs/40790051108
