@@ -50,3 +50,15 @@ References:
 - https://developer.apple.com/documentation/appintents/displaying-static-and-interactive-snippets
 - https://developer.apple.com/documentation/webkit/webkit-for-swiftui
 - https://developer.apple.com/documentation/webkit/webpage/load(html:baseURL:)
+
+## Observed on iPad (28 October 2026)
+
+The user ran the WebKit Snippet action in the Shortcuts floating snippet panel. The outer SwiftUI heading and footer were displayed, but the WebKit.WebView region was replaced by a giant yellow background with a red prohibited symbol. Scrolling exposed the footer underneath it. The system-hosted snippet appears to substitute a forbidden-content placeholder instead of embedding WebKit. This is **strong runtime evidence of an unsupported nested WebView**, not a CSS or JavaScript failure.
+
+Two isolated diagnostic actions are now included:
+- **LAB: Native Snippet Controls**: text and Buttons backed by App Intents, plus persisted counter.
+- **LAB: Snippet ShareLink**: plain SwiftUI ShareLink in an otherwise minimal SnippetIntent. This determines whether native sharing can be presented *inside* the floating window.
+
+Do not assume the ShareLink can present from a snippet until verified on device. Apple formally documents snippet interactivity for Buttons/Toggles backed by App Intents, not arbitrary platform views or modal presentations. Keep these probes separate so an unsupported child view does not obscure other results.
+
+If WebKit is rejected but a fully interactive webpage is still required, use a separate in-app WKWebView window (with an App Intent opening the app) or the original HTML-in-Quick-Look picker workaround. Neither is an embedded Snippet WebView.

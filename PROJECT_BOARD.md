@@ -22,7 +22,7 @@ Useful technical discoveries, undocumented behavior, shortcuts, implementation t
 
 Things worth testing or researching before deciding whether to implement them.
 
-- [ ] iPad Shortcuts-hosted SnippetIntent WebView: confirm that the iOS 27 snippet host actually renders SwiftUI WebKit.WebView and supports JS, file picker, keyboard and web share *inside* the overlay. Source and reproducible test: docs/WEBVIEW_SNIPPET_EXPERIMENT.md. Passing the Xcode build alone does not prove this runtime behavior.
+- [ ] Investigate iPadOS snippet-host restrictions: user observed yellow/red prohibited-content placeholder instead of WebKit.WebView while native SwiftUI text rendered. The WebKit embedding test is runtime-failed; test separate LAB: Native Snippet Controls and LAB: Snippet ShareLink actions to determine whether native AppIntent controls and native share sheet work inside the floating panel. See docs/WEBVIEW_SNIPPET_EXPERIMENT.md.
 
 ## Open Questions
 
