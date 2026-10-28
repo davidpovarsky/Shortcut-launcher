@@ -1,6 +1,7 @@
 import AppIntents
 import Foundation
 import SwiftUI
+import WebKit
 
 // A/B test for what the Shortcuts-hosted snippet renderer actually supports.
 // Keep these separate from the WebKit test so one unsupported view doesn't
@@ -145,4 +146,98 @@ private struct ShareLinkSnippetDiagnosticView: View {
         }
         .padding()
     }
+}
+
+
+// Deliberately tiny variants (< 400 pt) to distinguish an oversized
+// WebKit.WebView(page) problem from a host-wide prohibition on web surfaces.
+// Keep each in its own SnippetIntent, so one failure doesn't mask another.
+struct CompactSwiftUIWebViewDiagnosticIntent: SnippetIntent {
+    static let title: LocalizedStringResource = "LAB: Compact SwiftUI WebView"
+    static let description = IntentDescription(
+        "Tests the simple native WebKit WebView(url:) at a 180-point height inside a snippet."
+    )
+    static let isDiscoverable = true
+    static let supportedModes: IntentModes = .background
+
+    init() {}
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ShowsSnippetView {
+        .result(view: CompactSwiftUIWebViewDiagnosticView())
+    }
+}
+
+private struct CompactSwiftUIWebViewDiagnosticView: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("Native WebKit WebView(url:)")
+                .font(.headline)
+            WebView(url: URL(string: "https://example.com/"))
+                .frame(height: 180)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Text("If a forbidden symbol appears here, the host rejected the compact WebKit view too.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+    }
+}
+
+struct CompactWKWebViewDiagnosticIntent: SnippetIntent {
+    static let title: LocalizedStringResource = "LAB: Compact UIKit WKWebView"
+    static let description = IntentDescription(
+        "Tests the older WKWebView embedded with UIViewRepresentable in a compact snippet."
+    )
+    static let isDiscoverable = true
+    static let supportedModes: IntentModes = .background
+
+    init() {}
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ShowsSnippetView {
+        .result(view: CompactWKWebViewDiagnosticView())
+    }
+}
+
+private struct CompactWKWebViewDiagnosticView: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("UIKit WKWebView / UIViewRepresentable")
+                .font(.headline)
+            WKWebViewWrapper()
+                .frame(height: 180)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Text("The embedded page contains a JavaScript counter; no internet connection is required.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+    }
+}
+
+private struct WKWebViewWrapper: UIViewRepresentable {
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView(frame: .zero)
+        webView.loadHTMLString(
+            #"""
+            <!doctype html>
+            <html lang="en">
+            <head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+            <body style="font:18px -apple-system,system-ui;background:#eff6ff;padding:15px">
+              <b>UIKit WKWebView loaded!</b>
+              <p>JavaScript counter: <span id="count">0</span></p>
+              <button style="font:inherit;padding:10px"
+                onclick="document.getElementById('count').textContent = Number(document.getElementById('count').textContent) + 1">
+                Increment
+              </button>
+            </body>
+            </html>
+            """#,
+            baseURL: nil
+        )
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
 }

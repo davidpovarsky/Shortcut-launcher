@@ -62,3 +62,9 @@ Two isolated diagnostic actions are now included:
 Do not assume the ShareLink can present from a snippet until verified on device. Apple formally documents snippet interactivity for Buttons/Toggles backed by App Intents, not arbitrary platform views or modal presentations. Keep these probes separate so an unsupported child view does not obscure other results.
 
 If WebKit is rejected but a fully interactive webpage is still required, use a separate in-app WKWebView window (with an App Intent opening the app) or the original HTML-in-Quick-Look picker workaround. Neither is an embedded Snippet WebView.
+
+Additional isolated WebKit probes (to eliminate height and WebKit API differences as alternative explanations):
+- **LAB: Compact SwiftUI WebView** uses the simplest WebKit.WebView(url:) at 180 pt.
+- **LAB: Compact UIKit WKWebView** uses a UIViewRepresentable-hosted WKWebView with a bundled inline JavaScript counter at 180 pt. It does not require internet access.
+
+Compare all four probes **on the same iPadOS build**. Distinguish the visible yellow/red unsupported placeholder from a normal network failure or blank HTML. If both WebKit variants fail while Native Snippet Controls succeeds, the evidence strongly implicates snippet-host web-view restrictions.

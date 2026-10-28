@@ -22,7 +22,7 @@ Useful technical discoveries, undocumented behavior, shortcuts, implementation t
 
 Things worth testing or researching before deciding whether to implement them.
 
-- [ ] Investigate iPadOS snippet-host restrictions: user observed yellow/red prohibited-content placeholder instead of WebKit.WebView while native SwiftUI text rendered. The WebKit embedding test is runtime-failed; test separate LAB: Native Snippet Controls and LAB: Snippet ShareLink actions to determine whether native AppIntent controls and native share sheet work inside the floating panel. See docs/WEBVIEW_SNIPPET_EXPERIMENT.md.
+- [ ] Investigate iPadOS snippet-host restrictions: user observed yellow/red prohibited-content placeholder instead of WebKit.WebView while native SwiftUI text rendered. Test four isolated actions: Native Snippet Controls; Snippet ShareLink; Compact SwiftUI WebView(url:) (180 pt); and Compact UIKit WKWebView (UIViewRepresentable, 180 pt). Compare on iPad to separate unsupported web views from sizing issues. See docs/WEBVIEW_SNIPPET_EXPERIMENT.md.
 
 ## Open Questions
 
