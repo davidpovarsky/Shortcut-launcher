@@ -13,7 +13,7 @@ This deliberately tests behavior Apple discourages: Apple's WWDC/App Intents gui
   - **חזור** — denies: attempts to catch the thrown error and return `back`.
 - **LAB: Read Confirmation Trace** — independently retrieves the last recorded phase, returned value, error type, and error domain/code. This is useful even if iPadOS aborts the first action without reaching a catch block.
 
-The first action uses `requestConfirmation(actionName:dialog:showDialogAsPrompt:content:)` with a small static SwiftUI view. It does **not** depend on WebKit and does **not** change the existing Snippet clock or other actions.
+The first action uses the native `requestConfirmation(actionName:dialog:)` API with **no custom SwiftUI view**. The Xcode 27.1 SDK rejected the optional inline SwiftUI view under strict Swift 6 concurrency, so the test now focuses on the native confirmation buttons only. It does **not** depend on WebKit and does **not** change the existing Snippet clock or other actions.
 
 ## Reproducible Shortcuts test
 

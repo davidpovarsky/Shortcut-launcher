@@ -1,6 +1,5 @@
 import AppIntents
 import Foundation
-import SwiftUI
 
 // IMPORTANT: Experimental only. Apple says cancellation of
 // requestConfirmation ends the App Intent and recommends not catching it.
@@ -101,20 +100,8 @@ struct ExperimentalBackNextConfirmationIntent: AppIntent {
                     denyAlternatives: [],
                     destructive: false
                 ),
-                dialog: "בחר אם להמשיך או לחזור (ניסוי בלבד)",
-                showDialogAsPrompt: true
-            ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("Confirmation Branch Lab", systemImage: "arrow.left.arrow.right")
-                        .font(.headline)
-                    Text("ניסוי כפתורי מערכת: חזור / המשך")
-                        .font(.title3.weight(.semibold))
-                    Text("המשך אמור להחזיר next. חזור ינסה להחזיר back גם אם המערכת מסמנת ביטול.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(12)
-            }
+                dialog: "בחר אם להמשיך או לחזור (ניסוי בלבד)"
+            )
 
             ConfirmationBranchExperiment.store(
                 runID: runID,
