@@ -29,6 +29,8 @@ Things worth testing or researching before deciding whether to implement them.
 
 Important unresolved questions or uncertainties.
 
+- [ ] Does `requestValue()` for optional `[String]` with `@Parameter(size: .init(min: 1, max: 8))` display a native add/delete/reorder list *while running a Shortcut*, unlike an unconstrained `[String]` parameter? Use A/B tests `LAB: Runtime Text List (Sized)` and `(Plain)`, then Show Result. See docs/RUNTIME_TEXT_LIST_EXPERIMENT.md.
+
 - [ ] Can iPadOS 27 Shortcuts continue when a native `requestConfirmation` is denied and the App Intent deliberately catches the thrown cancellation? Check `LAB: Confirmation Back or Next`, then `LAB: Read Confirmation Trace`; compare accepted `next` versus denied `back`. Apple's guidance discourages catching cancellation. Test steps: docs/CONFIRMATION_BACK_NEXT_EXPERIMENT.md.
 
 ## Planned / Todo
