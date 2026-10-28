@@ -35,6 +35,8 @@ Important unresolved questions or uncertainties.
 
 Concrete work that is worth doing but is not part of the current task.
 
+- [ ] iPad acceptance: LAB: Wikipedia Discovery should show an image/title/summary inside a native confirmation snippet; tapping חפש שוב should fetch a *different* random MediaWiki article while the same Shortcut remains suspended; tapping פתח should return the article's URL to the next Shortcut action. See docs/WIKIPEDIA_DISCOVERY_EXPERIMENT.md. The catch-on-denial pattern is experimentally known to work on this iPadOS version, not Apple-guaranteed.
+
 Use Markdown checkboxes where useful:
 
 - [ ] Example item
@@ -42,6 +44,8 @@ Use Markdown checkboxes where useful:
 ## Done
 
 Completed items that are still useful to retain because they document an important decision, discovery, or implementation.
+
+- [x] Streamline Package unsigned IPA GitHub Actions path to device Release build + ad-hoc entitlement signing + IPA artifact, removing redundant XcodeGen, repeated notifications, simulator/tests and unnecessary diagnostics. Preserve full iOS 27 CI separately for comprehensive checks. See docs/WIKIPEDIA_DISCOVERY_EXPERIMENT.md.
 
 Example:
 

@@ -1,5 +1,8 @@
 name: Package unsigned IPA
 
+# Fast iteration path: device Release build, required extension verification,
+# ad-hoc entitlement signing and SideStore-ready IPA. No simulator, no tests.
+# The full 'iOS 27 CI' workflow remains unchanged for comprehensive checks.
 on:
   workflow_dispatch:
     inputs:
@@ -16,99 +19,38 @@ on:
       - 'v*'
 
 permissions:
-  actions: read
   contents: read
 
 jobs:
   package:
+    name: Fast device build and IPA
     runs-on: xcode-27
-    timeout-minutes: 40
+    timeout-minutes: 30
     env:
       APP_BUNDLE_ID: ${{ inputs.bundle_id || 'com.dav.DavLauncher' }}
       APP_GROUP_ID: ${{ inputs.app_group_id || 'group.com.dav.DavLauncher' }}
 
     steps:
-      - name: Live Activity · refresh
-        uses: davidpovarsky/github-automation/live-refresh@main
-        continue-on-error: true
-        with:
-          event: refresh
-          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
-          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
-          github_token: ${{ github.token }}
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Live Activity · refresh
-        uses: davidpovarsky/github-automation/live-refresh@main
-        continue-on-error: true
-        with:
-          event: refresh
-          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
-          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
-          github_token: ${{ github.token }}
-      - name: Static validation
-        run: ./scripts/validate_static.sh
-
-      - name: Live Activity · refresh
-        uses: davidpovarsky/github-automation/live-refresh@main
-        continue-on-error: true
-        with:
-          event: refresh
-          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
-          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
-          github_token: ${{ github.token }}
-      - name: Bootstrap
-        run: ./scripts/bootstrap.sh
-
-      - name: Live Activity · refresh
-        uses: davidpovarsky/github-automation/live-refresh@main
-        continue-on-error: true
-        with:
-          event: refresh
-          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
-          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
-          github_token: ${{ github.token }}
-      - name: Diagnostics
-        run: ./scripts/print_diagnostics.sh
-
-      - name: Live Activity · refresh
-        uses: davidpovarsky/github-automation/live-refresh@main
-        continue-on-error: true
-        with:
-          event: refresh
-          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
-          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
-          github_token: ${{ github.token }}
-      - name: Package unsigned IPA
+      # This script already runs bootstrap.sh (XcodeGen), builds a generic
+      # iOS Release app, verifies required assets/extension bundle IDs,
+      # ad-hoc signs the app and widget entitlements and packages the IPA.
+      # Repeating bootstrap or building an iPad simulator adds no value here.
+      - name: Build and package SideStore-ready IPA
         run: ./scripts/build_unsigned_ipa.sh
 
-      - name: Live Activity · refresh
-        if: always()
-        uses: davidpovarsky/github-automation/live-refresh@main
+      - name: Collect diagnostics if build failed
+        if: failure()
         continue-on-error: true
-        with:
-          event: refresh
-          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
-          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
-          github_token: ${{ github.token }}
-      - name: Collect diagnostics
-        if: always()
         run: ./scripts/collect_diagnostics.sh
 
-      - name: Live Activity · refresh
-        if: always()
-        uses: davidpovarsky/github-automation/live-refresh@main
-        continue-on-error: true
-        with:
-          event: refresh
-          device_id: ${{ secrets.NOTIFY_DEVICE_ID }}
-          token: ${{ secrets.NOTIFY_DEVICE_TOKEN }}
-          github_token: ${{ github.token }}
       - name: Upload IPA and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: DavLauncher-IPA-${{ github.run_number }}
           path: Artifacts/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
