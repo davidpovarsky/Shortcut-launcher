@@ -23,6 +23,7 @@ Useful technical discoveries, undocumented behavior, shortcuts, implementation t
 Things worth testing or researching before deciding whether to implement them.
 
 - [ ] Investigate iPadOS snippet-host restrictions: user observed yellow/red prohibited-content placeholder instead of WebKit.WebView while native SwiftUI text rendered. Test four isolated actions: Native Snippet Controls; Snippet ShareLink; Compact SwiftUI WebView(url:) (180 pt); and Compact UIKit WKWebView (UIViewRepresentable, 180 pt). Compare on iPad to separate unsupported web views from sizing issues. See docs/WEBVIEW_SNIPPET_EXPERIMENT.md.
+- [ ] Test one-second real-network Snippet reloads: LAB: Internet Clock (Live) fetches https://utctime.app/api/now every ~1s and calls InternetTimeSnippetIntent.reload() after each response, with counters and a manual Fetch-now control. Verify on iPad whether automatic visible updates occur (not just the manual AppIntent redraw). See docs/INTERNET_TIME_SNIPPET_EXPERIMENT.md.
 
 ## Open Questions
 
