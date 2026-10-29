@@ -2,7 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>INEnums</key><array/>
-<key>INTypes</key><array/>
+<key>INTypes</key><array><dict>
+<key>INTypeName</key><string>DavCatalogEntry</string>
+<key>INTypeDisplayName</key><string>Dav Demo Catalog Item</string>
+<key>INTypeDisplayNameID</key><string>davCatalogTypeName</string>
+<key>INTypeLastPropertyTag</key><integer>99</integer>
+<key>INTypeProperties</key><array>
+<dict><key>INTypePropertyDefault</key><true/><key>INTypePropertyDisplayPriority</key><integer>1</integer><key>INTypePropertyName</key><string>identifier</string><key>INTypePropertyTag</key><integer>1</integer><key>INTypePropertyType</key><string>String</string></dict>
+<dict><key>INTypePropertyDefault</key><true/><key>INTypePropertyDisplayPriority</key><integer>2</integer><key>INTypePropertyName</key><string>displayString</string><key>INTypePropertyTag</key><integer>2</integer><key>INTypePropertyType</key><string>String</string></dict>
+<dict><key>INTypePropertyDefault</key><true/><key>INTypePropertyDisplayPriority</key><integer>3</integer><key>INTypePropertyName</key><string>pronunciationHint</string><key>INTypePropertyTag</key><integer>3</integer><key>INTypePropertyType</key><string>String</string></dict>
+<dict><key>INTypePropertyDefault</key><true/><key>INTypePropertyDisplayPriority</key><integer>4</integer><key>INTypePropertyName</key><string>alternativeSpeakableMatches</string><key>INTypePropertySupportsMultipleValues</key><true/><key>INTypePropertyTag</key><integer>4</integer><key>INTypePropertyType</key><string>SpeakableString</string></dict>
+</array>
+</dict></array>
 <key>INIntentDefinitionModelVersion</key><string>1.2</string>
 <key>INIntentDefinitionNamespace</key><string>DavSiriPanel</string>
 <key>INIntentDefinitionSystemVersion</key><string>24A000</string>
@@ -23,6 +34,47 @@
 <key>INIntentParameterCombinationUpdatesLinked</key><true/>
 </dict></dict>
 <key>INIntentParameterCombinations</key><dict><key></key><dict>
+<key>INIntentParameterCombinationIsPrimary</key><true/>
+<key>INIntentParameterCombinationSupportsBackgroundExecution</key><true/>
+</dict></dict>
+<key>INIntentResponse</key><dict><key>INIntentResponseCodes</key><array>
+<dict><key>INIntentResponseCodeName</key><string>success</string><key>INIntentResponseCodeSuccess</key><true/></dict>
+<dict><key>INIntentResponseCodeName</key><string>failure</string></dict>
+</array></dict>
+</dict><dict>
+<key>INIntentName</key><string>DavSearchCatalog</string>
+<key>INIntentTitle</key><string>LAB: SiriKit Live Search</string>
+<key>INIntentTitleID</key><string>davCatalogSearchTitle</string>
+<key>INIntentDescription</key><string>Search a private demo catalog using SiriKit dynamic search suggestions</string>
+<key>INIntentDescriptionID</key><string>davCatalogSearchDescription</string>
+<key>INIntentCategory</key><string>information</string>
+<key>INIntentType</key><string>Custom</string>
+<key>INIntentVerb</key><string>View</string>
+<key>INIntentConfigurable</key><true/>
+<key>INIntentLastParameterTag</key><integer>1</integer>
+<key>INIntentParameters</key><array><dict>
+<key>INIntentParameterName</key><string>entry</string>
+<key>INIntentParameterTag</key><integer>1</integer>
+<key>INIntentParameterDisplayName</key><string>Demo Item</string>
+<key>INIntentParameterDisplayNameID</key><string>davCatalogEntryLabel</string>
+<key>INIntentParameterDisplayPriority</key><integer>1</integer>
+<key>INIntentParameterType</key><string>Object</string>
+<key>INIntentParameterObjectType</key><string>DavCatalogEntry</string>
+<key>INIntentParameterObjectTypeNamespace</key><string>DavSiriPanel</string>
+<key>INIntentParameterConfigurable</key><true/>
+<key>INIntentParameterSupportsDynamicEnumeration</key><true/>
+<key>INIntentParameterSupportsSearch</key><true/>
+<key>INIntentParameterSupportsResolution</key><true/>
+<key>INIntentParameterPromptDialogs</key><array>
+<dict><key>INIntentParameterPromptDialogCustom</key><true/><key>INIntentParameterPromptDialogFormatString</key><string>Search the example catalog</string><key>INIntentParameterPromptDialogFormatStringID</key><string>davCatalogConfigPrompt</string><key>INIntentParameterPromptDialogType</key><string>Configuration</string></dict>
+<dict><key>INIntentParameterPromptDialogCustom</key><true/><key>INIntentParameterPromptDialogFormatString</key><string>Choose a demo item</string><key>INIntentParameterPromptDialogFormatStringID</key><string>davCatalogRuntimePrompt</string><key>INIntentParameterPromptDialogType</key><string>Primary</string></dict>
+</array>
+</dict></array>
+<key>INIntentManagedParameterCombinations</key><dict><key>entry</key><dict>
+<key>INIntentParameterCombinationSupportsBackgroundExecution</key><true/>
+<key>INIntentParameterCombinationUpdatesLinked</key><true/>
+</dict></dict>
+<key>INIntentParameterCombinations</key><dict><key>entry</key><dict>
 <key>INIntentParameterCombinationIsPrimary</key><true/>
 <key>INIntentParameterCombinationSupportsBackgroundExecution</key><true/>
 </dict></dict>
