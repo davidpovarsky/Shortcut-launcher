@@ -18,6 +18,8 @@ Useful technical discoveries, undocumented behavior, shortcuts, implementation t
 
 - Runtime system menus: IntentChoiceOption only exposes title and semantic style; for title/subtitle/image rows during an App Intent, requestDisambiguation(among:) with transient AppEntity values is a better fit. Use per-invocation IDs and App Group-backed EntityQuery resolution. Picker appearance remains system-controlled and is not identical to native vCard Contacts or Actions MenuItem.
 
+- Verified legacy SiriKit dynamic-search wiring: custom `.intentdefinition` object parameters can set `INIntentParameterSupportsSearch` and `INIntentParameterSupportsDynamicEnumeration`; the extension can implement `provideEntryOptionsCollection(for:searchTerm:with:)` to return app-owned `INObjectCollection` suggestions. Telegram iOS provides a public precedent. The required `INIntentParameterCombinationTitle` summary must be present for Xcode 27 code generation. The IPA builds; search during **runtime** is still unverified (see docs/SIRIKIT_DYNAMIC_SEARCH_EXPERIMENT.md).
+
 ## Experiments / Investigations
 
 Things worth testing or researching before deciding whether to implement them.
@@ -36,6 +38,8 @@ Important unresolved questions or uncertainties.
 - [ ] iPad acceptance: LAB Searchable Rich Objects must show Shortcuts' native *editor-time* AppEntity parameter picker with image/title/subtitle suggestions and text search. Search for `invoice` or `MP4` (not in first seven suggestions) to prove `EntityStringQuery.entities(matching:)` is invoked; verify the returned AppEntity identity and saved-selection resolution. See docs/SEARCHABLE_RICH_OBJECTS_EXPERIMENT.md.
 
 - [ ] iPadOS 27 native runtime search comparison: LAB Native Contact Search (system Contacts), LAB Contact Options Search (five synthetic person options), and LAB Email Options Search (Mail-like email mode). Verify whether search appears during execution and, crucially, whether the system can search the app-supplied people. Screenshot each, compare with Apple Send Email and AppEntity picker. See docs/NATIVE_CONTACT_SEARCH_PROBE.md.
+
+- [ ] On-device iPadOS 27 acceptance: `LAB: SiriKit Live Search` should expose searchable app-owned suggestions in **runtime** (not only editor). Search `invoice` and `מתכון`; compare with AppEntity and native Contacts pickers and record whether the parameter must be tapped. If absent from Shortcuts, investigate custom intent discoverability/donation separately. See docs/SIRIKIT_DYNAMIC_SEARCH_EXPERIMENT.md.
 
 ## Planned / Todo
 
