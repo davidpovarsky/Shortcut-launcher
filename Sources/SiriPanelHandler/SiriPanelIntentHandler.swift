@@ -2,7 +2,10 @@ import Intents
 
 final class SiriPanelIntentHandler: INExtension, DavShowPanelIntentHandling {
     override func handler(for intent: INIntent) -> Any {
-        self
+        if intent is DavSearchCatalogIntent {
+            return SiriCatalogSearchHandler()
+        }
+        return self
     }
 
     func handle(intent: DavShowPanelIntent, completion: @escaping (DavShowPanelIntentResponse) -> Void) {
