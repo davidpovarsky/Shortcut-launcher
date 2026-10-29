@@ -29,10 +29,10 @@ struct DavLauncherAppShortcuts: AppShortcutsProvider {
             systemImageName: "questionmark.circle"
         )
         AppShortcut(
-            intent: ExperimentalDurationPickerIntent(),
-            phrases: ["Test duration picker with \(.applicationName)"],
-            shortTitle: "LAB Duration Picker",
-            systemImageName: "timer"
+            intent: LabNativePersonOptionsIntent(),
+            phrases: ["Search demo contacts with \(.applicationName)"],
+            shortTitle: "LAB Contact Search",
+            systemImageName: "person.crop.circle.badge.magnifyingglass"
         )
         AppShortcut(
             intent: SearchableRichObjectIntent(),
