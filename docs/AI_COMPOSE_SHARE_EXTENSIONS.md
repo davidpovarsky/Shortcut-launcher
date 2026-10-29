@@ -36,7 +36,7 @@ Files:
 
 The draft JSON includes \`id\`, \`createdAt\`, \`message\` (text typed into compose view), \`source\` (system share or Action), \`sharedText\` (text/URLs received from the host), and \`attachments\` (name, byte size, UTType, stored relative filename and source).
 
-- A provider's temporary file is copied **inside** \`NSItemProvider.loadFileRepresentation\`'s completion handler, before the host deletes it.
+- A provider's temporary file is copied **inside** \`NSItemProvider.loadFileRepresentation\`'s completion handler, before the host deletes it. When a host supplies *only* \`public.file-url\`, a narrow legacy \`loadItem\` fallback copies the actual referenced document rather than saving a file-URL pointer. The same fallback decodes shared web links as URLs instead of assuming UTF-8 bytes.
 - Files selected via the document picker are copied into the same App Group folder, using security-scoped access where available.
 - Each attachment is limited to 80 MiB, and a draft is limited to 20 attachments. Oversized or unreadable items are reported as errors; stored attachment count is visible in the Action UI.
 - Only publish the latest-draft pointer **after** writing the JSON manifest.

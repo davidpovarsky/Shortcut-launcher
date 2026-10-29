@@ -120,7 +120,7 @@ final class AIComposeInputController: NSObject, UIDocumentPickerDelegate {
         // Their content becomes sharedText in the saved draft.
         if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier),
            !provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-            loadTextRepresentation(provider, type: .url)
+            loadURLRepresentation(provider)
             return
         }
         if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier),
@@ -132,14 +132,18 @@ final class AIComposeInputController: NSObject, UIDocumentPickerDelegate {
         }
 
         let type: String
-        if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-            type = UTType.fileURL.identifier
-        } else if provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) {
+        // A file URL is a pointer to the document, not its bytes. Prefer
+        // an actual content representation, and treat fileURL separately
+        // when the source app offers *only* a local document reference.
+        if provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) {
             type = UTType.pdf.identifier
         } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
             type = UTType.image.identifier
         } else if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
             type = UTType.movie.identifier
+        } else if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+            loadFileURLRepresentation(provider)
+            return
         } else {
             type = provider.registeredTypeIdentifiers.first ?? UTType.data.identifier
         }
@@ -172,6 +176,79 @@ final class AIComposeInputController: NSObject, UIDocumentPickerDelegate {
 
             DispatchQueue.main.async { [weak self] in
                 self?.finishProviderLoad(result)
+            }
+        }
+    }
+
+    // Files often provide public.file-url rather than the document's binary
+    // representation. loadFileRepresentation(public.file-url) would copy a
+    // pointer file, NOT the PDF/Word/image itself. We intentionally use the
+    // legacy loadItem API in this narrow fallback to get the actual URL, and
+    // copy the real document before the callback returns. Apple deprecated
+    // loadItem in iOS 27, but there is no equivalent guaranteed for every
+    // older NSItemProvider that only vends public.file-url.
+    private func loadFileURLRepresentation(_ provider: NSItemProvider) {
+        let sessionID = self.sessionID
+        let suggestedName = provider.suggestedName
+        pendingProviders += 1
+        didChange?()
+
+        provider.loadItem(
+            forTypeIdentifier: UTType.fileURL.identifier,
+            options: nil
+        ) { [weak self] item, error in
+            let sourceURL = (item as? URL)
+                ?? (item as? NSURL).map { $0 as URL }
+                ?? (item as? String).flatMap(URL.init(string:))
+            let result: Result<AIComposeAttachment, Error>
+            if let sourceURL, sourceURL.isFileURL {
+                result = Result {
+                    try AIComposeDraftStore.stageFile(
+                        from: sourceURL,
+                        in: sessionID,
+                        displayName: suggestedName ?? sourceURL.lastPathComponent,
+                        typeIdentifier: UTType.fileURL.identifier,
+                        source: "share-sheet-file-url"
+                    )
+                }
+            } else {
+                result = .failure(
+                    error ?? AIComposeStoreError.invalidAttachment
+                )
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.finishProviderLoad(result)
+            }
+        }
+    }
+
+    // Web links are typically NSURL objects or property-list values, not
+    // UTF-8 bytes. Decode them as URLs, keeping their actual destination.
+    private func loadURLRepresentation(_ provider: NSItemProvider) {
+        pendingProviders += 1
+        didChange?()
+        provider.loadItem(
+            forTypeIdentifier: UTType.url.identifier,
+            options: nil
+        ) { [weak self] item, error in
+            let text = (item as? URL)?.absoluteString
+                ?? (item as? NSURL)?.absoluteString
+                ?? (item as? String)
+                ?? (item as? NSString).map { $0 as String }
+                ?? (item as? Data).flatMap { String(data: $0, encoding: .utf8) }
+            let description = error?.localizedDescription
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.pendingProviders = max(0, self.pendingProviders - 1)
+                if let text,
+                   !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    self.sharedText.append(String(text.prefix(40_000)))
+                } else {
+                    self.errors.append(
+                        description ?? "לא ניתן לקרוא את הקישור ששותף"
+                    )
+                }
+                self.didChange?()
             }
         }
     }
