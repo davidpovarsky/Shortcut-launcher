@@ -35,6 +35,8 @@ Important unresolved questions or uncertainties.
 
 - [ ] iPad acceptance: LAB Searchable Rich Objects must show Shortcuts' native *editor-time* AppEntity parameter picker with image/title/subtitle suggestions and text search. Search for `invoice` or `MP4` (not in first seven suggestions) to prove `EntityStringQuery.entities(matching:)` is invoked; verify the returned AppEntity identity and saved-selection resolution. See docs/SEARCHABLE_RICH_OBJECTS_EXPERIMENT.md.
 
+- [ ] iPadOS 27 native runtime search comparison: LAB Native Contact Search (system Contacts), LAB Contact Options Search (five synthetic person options), and LAB Email Options Search (Mail-like email mode). Verify whether search appears during execution and, crucially, whether the system can search the app-supplied people. Screenshot each, compare with Apple Send Email and AppEntity picker. See docs/NATIVE_CONTACT_SEARCH_PROBE.md.
+
 ## Planned / Todo
 
 Concrete work that is worth doing but is not part of the current task.
