@@ -72,11 +72,15 @@
 </dict></array>
 <key>INIntentManagedParameterCombinations</key><dict><key>entry</key><dict>
 <key>INIntentParameterCombinationSupportsBackgroundExecution</key><true/>
+<key>INIntentParameterCombinationTitle</key><string>Search for ${entry}</string>
+<key>INIntentParameterCombinationTitleID</key><string>davCatalogManagedSummary</string>
 <key>INIntentParameterCombinationUpdatesLinked</key><true/>
 </dict></dict>
 <key>INIntentParameterCombinations</key><dict><key>entry</key><dict>
 <key>INIntentParameterCombinationIsPrimary</key><true/>
 <key>INIntentParameterCombinationSupportsBackgroundExecution</key><true/>
+<key>INIntentParameterCombinationTitle</key><string>Search for ${entry}</string>
+<key>INIntentParameterCombinationTitleID</key><string>davCatalogShortcutsSummary</string>
 </dict></dict>
 <key>INIntentResponse</key><dict><key>INIntentResponseCodes</key><array>
 <dict><key>INIntentResponseCodeName</key><string>success</string><key>INIntentResponseCodeSuccess</key><true/></dict>
