@@ -10,45 +10,18 @@ struct SearchableRichSampleEntity: AppEntity, Sendable {
 
     let id: String
 
-    @Property(title: "Name")
-    var name: String = ""
+    let name: String
 
-    @Property(title: "Category")
-    var category: String = ""
+    let category: String
 
-    @Property(title: "Source (demo)")
-    var source: String = ""
+    let source: String
 
-    @Property(title: "Description")
-    var details: String = ""
+    let details: String
 
-    @Property(title: "Tags")
-    var tags: String = ""
+    let tags: String
 
     let subtitle: String
     let iconPNG: Data
-
-    // @Property wrappers cannot rely on the synthesized memberwise initializer.
-    init(
-        id: String,
-        name: String,
-        category: String,
-        source: String,
-        details: String,
-        tags: String,
-        subtitle: String,
-        iconPNG: Data
-    ) {
-        // Initialize nonwrapped storage before calling @Property setters.
-        self.id = id
-        self.subtitle = subtitle
-        self.iconPNG = iconPNG
-        self.name = name
-        self.category = category
-        self.source = source
-        self.details = details
-        self.tags = tags
-    }
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
