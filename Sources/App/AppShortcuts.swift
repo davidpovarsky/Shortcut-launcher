@@ -35,10 +35,10 @@ struct DavLauncherAppShortcuts: AppShortcutsProvider {
             systemImageName: "timer"
         )
         AppShortcut(
-            intent: ExperimentalRichEntityPickerIntent(),
-            phrases: ["Test rich picker with \(.applicationName)"],
-            shortTitle: "LAB Rich Picker",
-            systemImageName: "square.grid.2x2"
+            intent: SearchableRichObjectIntent(),
+            phrases: ["Search demo objects with \(.applicationName)"],
+            shortTitle: "LAB Search Objects",
+            systemImageName: "magnifyingglass.circle"
         )
         AppShortcut(
             intent: ObjectTypeLabIntent(),
