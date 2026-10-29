@@ -11,19 +11,19 @@ struct SearchableRichSampleEntity: AppEntity, Sendable {
     let id: String
 
     @Property(title: "Name")
-    var name: String
+    var name: String = ""
 
     @Property(title: "Category")
-    var category: String
+    var category: String = ""
 
     @Property(title: "Source (demo)")
-    var source: String
+    var source: String = ""
 
     @Property(title: "Description")
-    var details: String
+    var details: String = ""
 
     @Property(title: "Tags")
-    var tags: String
+    var tags: String = ""
 
     let subtitle: String
     let iconPNG: Data
@@ -39,14 +39,15 @@ struct SearchableRichSampleEntity: AppEntity, Sendable {
         subtitle: String,
         iconPNG: Data
     ) {
+        // Initialize nonwrapped storage before calling @Property setters.
         self.id = id
+        self.subtitle = subtitle
+        self.iconPNG = iconPNG
         self.name = name
         self.category = category
         self.source = source
         self.details = details
         self.tags = tags
-        self.subtitle = subtitle
-        self.iconPNG = iconPNG
     }
 
     var displayRepresentation: DisplayRepresentation {
