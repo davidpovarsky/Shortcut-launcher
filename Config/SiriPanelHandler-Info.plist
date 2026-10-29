@@ -11,5 +11,5 @@
 <key>NSExtension</key><dict>
 <key>NSExtensionPointIdentifier</key><string>com.apple.intents-service</string>
 <key>NSExtensionPrincipalClass</key><string>$(PRODUCT_MODULE_NAME).SiriPanelIntentHandler</string>
-<key>NSExtensionAttributes</key><dict><key>IntentsSupported</key><array><string>DavShowPanelIntent</string></array></dict>
+<key>NSExtensionAttributes</key><dict><key>IntentsSupported</key><array><string>DavShowPanelIntent</string><string>DavSearchCatalogIntent</string></array></dict>
 </dict></dict></plist>
