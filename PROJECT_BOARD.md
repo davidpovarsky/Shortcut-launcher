@@ -22,6 +22,7 @@ Useful technical discoveries, undocumented behavior, shortcuts, implementation t
 
 ## Experiments / Investigations
 
+- [ ] iPadOS 27 native Translate popover test: LAB: Apple Translate Snippet has an AppIntent-backed button and a direct SwiftUI button which both attempt `.translationPresentation`. Determine whether the Shortcuts snippet host permits Apple's native translation overlay. See docs/TRANSLATION_SNIPPET_EXPERIMENT.md.
 Things worth testing or researching before deciding whether to implement them.
 
 - [ ] Investigate iPadOS snippet-host restrictions: user observed yellow/red prohibited-content placeholder instead of WebKit.WebView while native SwiftUI text rendered. Test four isolated actions: Native Snippet Controls; Snippet ShareLink; Compact SwiftUI WebView(url:) (180 pt); and Compact UIKit WKWebView (UIViewRepresentable, 180 pt). Compare on iPad to separate unsupported web views from sizing issues. See docs/WEBVIEW_SNIPPET_EXPERIMENT.md.

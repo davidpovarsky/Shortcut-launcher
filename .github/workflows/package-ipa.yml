@@ -15,6 +15,10 @@ on:
         required: false
         default: group.com.dav.DavLauncher
   push:
+    branches:
+      - experiment/shortcuts-share-extension-invocation
+    paths:
+      - 'Sources/App/Intents/TranslationSnippetExperimentIntent.swift'
     tags:
       - 'v*'
 
