@@ -76,7 +76,7 @@ struct LabNativeContactPickerIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
-        .result(value: "Selected native person: \(person.name.displayString)")
+        .result(value: "Selected native person: \(String(describing: person.name))")
     }
 }
 
@@ -103,7 +103,7 @@ struct LabNativePersonOptionsIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
-        .result(value: "Selected contact-mode person: \(person.name.displayString)")
+        .result(value: "Selected contact-mode person: \(String(describing: person.name))")
     }
 }
 
@@ -129,6 +129,6 @@ struct LabNativeEmailOptionsIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
-        .result(value: "Selected email-mode person: \(person.name.displayString)")
+        .result(value: "Selected email-mode person: \(String(describing: person.name))")
     }
 }
