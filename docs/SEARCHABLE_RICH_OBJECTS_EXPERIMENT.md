@@ -12,8 +12,9 @@ intercept the system's Contacts or Files providers.
 - Name: **LAB: Searchable Rich Objects**
 - Shortcuts App Shortcut tile: **LAB Search Objects**
 - Parameter: **Rich Object** (required `SearchableRichSampleEntity`)
-- Output: **the selected AppEntity**, with inspectable `Name`, `Category`,
-  `Source (demo)`, `Description` and `Tags` properties
+- Output: **the selected AppEntity**. Name/category/source/details/tags are
+  available to the app for display and search, but deliberately not exported
+  as separate Shortcuts Magic Variable properties in this SDK-safe experiment.
 - Location: `Sources/App/Intents/SearchableRichObjectIntent.swift`
 
 The app includes 16 entirely **fictional records** (documents, photos,
@@ -38,8 +39,9 @@ registered, and no network service is needed.
 5. Search for `invoice`, `דניאל`, `MP4`, or `email`.
    Those records are deliberately *not* in the first seven suggestions:
    seeing them proves that `entities(matching:)` was called.
-6. Select an item, run the Shortcut, and use **Get Details of App Entities**
-   or the magic-variable property picker to inspect the entity properties.
+6. Select an item and run the Shortcut: it returns the selected typed
+   AppEntity, shown by its display title. The source/details/tags are
+   intentionally internal fields, not exported via @Property wrappers.
 7. Close and reopen Shortcuts, then rerun the saved Shortcut; the stable
    ID must resolve to the same record.
 
