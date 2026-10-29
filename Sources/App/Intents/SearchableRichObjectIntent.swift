@@ -28,6 +28,27 @@ struct SearchableRichSampleEntity: AppEntity, Sendable {
     let subtitle: String
     let iconPNG: Data
 
+    // @Property wrappers cannot rely on the synthesized memberwise initializer.
+    init(
+        id: String,
+        name: String,
+        category: String,
+        source: String,
+        details: String,
+        tags: String,
+        subtitle: String,
+        iconPNG: Data
+    ) {
+        self.id = id
+        self.name = name
+        self.category = category
+        self.source = source
+        self.details = details
+        self.tags = tags
+        self.subtitle = subtitle
+        self.iconPNG = iconPNG
+    }
+
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
             title: "\(name)",
