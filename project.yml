@@ -27,6 +27,7 @@ targets:
     sources:
       - path: Sources/Shared
       - path: Sources/App
+      - path: Sources/ComposeShared/AIComposeDraftStore.swift
       - path: Config/DavShowPanel.intentdefinition
       - path: Resources/Localization
         buildPhase: resources
@@ -46,6 +47,10 @@ targets:
       - target: DavLauncherShareExpanded
         embed: true
       - target: DavLauncherAction
+        embed: true
+      - target: DavLauncherAIComposeShare
+        embed: true
+      - target: DavLauncherAIComposeAction
         embed: true
       - target: DavLauncherSiriPanelUI
         embed: true
@@ -186,6 +191,46 @@ targets:
         APPLICATION_EXTENSION_API_ONLY: YES
         DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
 
+  DavLauncherAIComposeShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Shared/Configuration/AppEnvironment.swift
+      - path: Sources/Shared/Services/DiagnosticLog.swift
+      - path: Sources/ComposeShared
+      - path: Sources/ComposeShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).AIComposeShare
+        PRODUCT_NAME: DavLauncherAIComposeShare
+        PRODUCT_MODULE_NAME: DavLauncherAIComposeShare
+        INFOPLIST_FILE: Config/ComposeShare-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/DavLauncherShare.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
+  DavLauncherAIComposeAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Shared/Configuration/AppEnvironment.swift
+      - path: Sources/Shared/Services/DiagnosticLog.swift
+      - path: Sources/ComposeShared
+      - path: Sources/ComposeActionExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).AIComposeAction
+        PRODUCT_NAME: DavLauncherAIComposeAction
+        PRODUCT_MODULE_NAME: DavLauncherAIComposeAction
+        INFOPLIST_FILE: Config/ComposeAction-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/DavLauncherShare.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
   DavLauncherSiriPanelUI:
     type: app-extension
     platform: iOS
@@ -243,6 +288,8 @@ schemes:
         DavLauncherShareMedium: all
         DavLauncherShareExpanded: all
         DavLauncherAction: all
+        DavLauncherAIComposeShare: all
+        DavLauncherAIComposeAction: all
         DavLauncherSiriPanelUI: all
         DavLauncherSiriPanelHandler: all
         DavLauncherTests: [test]

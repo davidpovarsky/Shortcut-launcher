@@ -102,6 +102,12 @@ enum AppEnvironment {
         }
 
         let bundleID = Bundle.main.bundleIdentifier ?? ""
+        if bundleID.contains("AIComposeShare") {
+            return "ai-compose-system-share-extension"
+        }
+        if bundleID.contains("AIComposeAction") {
+            return "ai-compose-action-extension"
+        }
         if bundleID.contains("ShareCompact") {
             return "share-compact-extension"
         }

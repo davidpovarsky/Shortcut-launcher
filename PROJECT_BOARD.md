@@ -37,6 +37,8 @@ Important unresolved questions or uncertainties.
 
 Concrete work that is worth doing but is not part of the current task.
 
+- [ ] iPad acceptance for the new **Dav AI Compose** Social compose share extension and **Dav AI Compose Action** Share Sheet Action extension: verify both appear, that editable message and shared image/PDF plus added Files-picker items are saved into App Group, and `LAB: Last AI Compose Draft` returns the manifest. No AI transmission is implemented. See docs/AI_COMPOSE_SHARE_EXTENSIONS.md.
+
 - [ ] iPad acceptance: LAB: Wikipedia Discovery should show an image/title/summary inside a native confirmation snippet; tapping חפש שוב should fetch a *different* random MediaWiki article while the same Shortcut remains suspended; tapping פתח should return the article's URL to the next Shortcut action. See docs/WIKIPEDIA_DISCOVERY_EXPERIMENT.md. The catch-on-denial pattern is experimentally known to work on this iPadOS version, not Apple-guaranteed.
 
 Use Markdown checkboxes where useful:

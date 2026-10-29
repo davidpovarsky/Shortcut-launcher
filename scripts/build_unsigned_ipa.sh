@@ -20,6 +20,8 @@ xcodebuild \
 
 APP_PATH="${BUILD_DIR}/DerivedData-Device/Build/Products/Release-iphoneos/DavLauncher.app"
 WIDGET_PATH="${APP_PATH}/PlugIns/DavLauncherWidgets.appex"
+COMPOSE_SHARE_PATH="${APP_PATH}/PlugIns/DavLauncherAIComposeShare.appex"
+COMPOSE_ACTION_PATH="${APP_PATH}/PlugIns/DavLauncherAIComposeAction.appex"
 if [[ ! -d "${APP_PATH}" ]]; then
   log "ERROR: Device app not found at ${APP_PATH}"
   exit 5
@@ -30,6 +32,8 @@ fi
 log "Verifying embedded extension, assets, and localizations"
 required_paths=(
   "${WIDGET_PATH}"
+  "${COMPOSE_SHARE_PATH}"
+  "${COMPOSE_ACTION_PATH}"
   "${APP_PATH}/Assets.car"
   "${APP_PATH}/en.lproj/Localizable.strings"
   "${APP_PATH}/he.lproj/Localizable.strings"
@@ -82,6 +86,30 @@ APP_ENTITLEMENTS="${ADHOC_DIR}/DavLauncher.entitlements"
 WIDGET_ENTITLEMENTS="${ADHOC_DIR}/DavLauncherWidgets.entitlements"
 resolve_entitlements "${ROOT_DIR}/Config/DavLauncher.entitlements" "${APP_ENTITLEMENTS}"
 resolve_entitlements "${ROOT_DIR}/Config/DavLauncherWidgets.entitlements" "${WIDGET_ENTITLEMENTS}"
+COMPOSE_ENTITLEMENTS="${ADHOC_DIR}/DavLauncherAICompose.entitlements"
+resolve_entitlements "${ROOT_DIR}/Config/DavLauncherShare.entitlements" "${COMPOSE_ENTITLEMENTS}"
+
+# The new Share and Action extensions are separately signed so SideStore can
+# see and preserve their App Group capabilities before provisioning the IPA.
+for compose_extension in "${COMPOSE_SHARE_PATH}" "${COMPOSE_ACTION_PATH}"; do
+  log "Ad-hoc signing compose extension ${compose_extension##*/}"
+  /usr/bin/codesign --force --sign - --timestamp=none \
+    --entitlements "${COMPOSE_ENTITLEMENTS}" "${compose_extension}"
+done
+
+python3 - "${COMPOSE_SHARE_PATH}/Info.plist" "${COMPOSE_ACTION_PATH}/Info.plist" <<'PY'
+import plistlib
+import sys
+
+expected = ('com.apple.share-services', 'com.apple.ui-services')
+for path, point in zip(sys.argv[1:], expected):
+    with open(path, 'rb') as handle:
+        plist = plistlib.load(handle)
+    actual = plist['NSExtension']['NSExtensionPointIdentifier']
+    if actual != point:
+        raise SystemExit(f'ERROR: {path} must use {point}, got {actual}')
+    print(f'OK compose extension {plist["CFBundleIdentifier"]} -> {actual}')
+PY
 
 log "Ad-hoc signing WidgetKit extension with requested entitlements"
 /usr/bin/codesign --force --sign - --timestamp=none --entitlements "${WIDGET_ENTITLEMENTS}" "${WIDGET_PATH}"
@@ -93,13 +121,17 @@ MAIN_DUMP="${ARTIFACTS_DIR}/DavLauncher-adhoc-entitlements.plist"
 WIDGET_DUMP="${ARTIFACTS_DIR}/DavLauncherWidgets-adhoc-entitlements.plist"
 /usr/bin/codesign -d --entitlements :- "${APP_PATH}" > "${MAIN_DUMP}" 2>> "${LOG_DIR}/codesign-adhoc.log"
 /usr/bin/codesign -d --entitlements :- "${WIDGET_PATH}" > "${WIDGET_DUMP}" 2>> "${LOG_DIR}/codesign-adhoc.log"
+COMPOSE_SHARE_DUMP="${ARTIFACTS_DIR}/DavLauncherAIComposeShare-adhoc-entitlements.plist"
+COMPOSE_ACTION_DUMP="${ARTIFACTS_DIR}/DavLauncherAIComposeAction-adhoc-entitlements.plist"
+/usr/bin/codesign -d --entitlements :- "${COMPOSE_SHARE_PATH}" > "${COMPOSE_SHARE_DUMP}" 2>> "${LOG_DIR}/codesign-adhoc.log"
+/usr/bin/codesign -d --entitlements :- "${COMPOSE_ACTION_PATH}" > "${COMPOSE_ACTION_DUMP}" 2>> "${LOG_DIR}/codesign-adhoc.log"
 
-python3 - "${MAIN_DUMP}" "${WIDGET_DUMP}" "${APP_GROUP_ID}" <<'PY'
+python3 - "${MAIN_DUMP}" "${WIDGET_DUMP}" "${COMPOSE_SHARE_DUMP}" "${COMPOSE_ACTION_DUMP}" "${APP_GROUP_ID}" <<'PY'
 import plistlib
 import sys
 
-expected = sys.argv[3]
-for path in sys.argv[1:3]:
+expected = sys.argv[-1]
+for path in sys.argv[1:-1]:
     with open(path, "rb") as handle:
         plist = plistlib.load(handle)
     groups = plist.get("com.apple.security.application-groups", [])
@@ -116,6 +148,14 @@ if ! /usr/bin/otool -l "${WIDGET_PATH}/DavLauncherWidgets" | grep -q 'LC_CODE_SI
   log "ERROR: Widget extension still has no LC_CODE_SIGNATURE after ad-hoc signing"
   exit 8
 fi
+for compose_binary in \
+  "${COMPOSE_SHARE_PATH}/DavLauncherAIComposeShare" \
+  "${COMPOSE_ACTION_PATH}/DavLauncherAIComposeAction"; do
+  if ! /usr/bin/otool -l "${compose_binary}" | grep -q 'LC_CODE_SIGNATURE'; then
+    log "ERROR: Compose extension has no LC_CODE_SIGNATURE: ${compose_binary}"
+    exit 9
+  fi
+done
 
 PACKAGE_DIR="${BUILD_DIR}/SideStorePackage"
 rm -rf "${PACKAGE_DIR}"
