@@ -43,6 +43,9 @@ struct SettingsView: View {
 
     private var settingsForm: some View {
         Form {
+            Section("Network Extension") {
+                NavigationLink("VPN Lab") { VPNLabView() }
+            }
             Section("Language") {
                 Picker("App Language", selection: $languageRaw) {
                     ForEach(AppLanguage.allCases) { language in
