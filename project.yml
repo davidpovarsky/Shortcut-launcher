@@ -36,6 +36,8 @@ targets:
       - path: Resources/LabVideos
         buildPhase: resources
     dependencies:
+      - target: DavLauncherVPNLab
+        embed: true
       - target: DavLauncherWidgets
         embed: true
       - target: DavLauncherSefariaPreview
@@ -66,6 +68,22 @@ targets:
         ENABLE_PREVIEWS: YES
         DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
         OTHER_LDFLAGS: $(inherited)
+
+  DavLauncherVPNLab:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/VPNLabExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).VPNLab
+        PRODUCT_MODULE_NAME: DavLauncherVPNLab
+        PRODUCT_NAME: DavLauncherVPNLab
+        INFOPLIST_FILE: Config/VPNLabExtension-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/VPNLabExtension.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
 
   DavLauncherWidgets:
     type: app-extension
@@ -282,6 +300,7 @@ schemes:
     build:
       targets:
         DavLauncher: all
+        DavLauncherVPNLab: all
         DavLauncherWidgets: all
         DavLauncherSefariaPreview: all
         DavLauncherShareCompact: all
