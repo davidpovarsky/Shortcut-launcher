@@ -33,6 +33,7 @@ struct StartVPNHostedServerIntent: AppIntent {
     static let isDiscoverable = true
 
     func perform() async throws -> some IntentResult & ReturnsValue<URL> {
-        throw VPNLabError.serverUnsupported
+        if true { throw VPNLabError.serverUnsupported }
+        return .result(value: URL(string: "http://127.0.0.1:8765")!)
     }
 }
