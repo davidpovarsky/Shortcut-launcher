@@ -70,7 +70,7 @@ struct UnifiedJSONPickerIntent: AppIntent {
         case let .rich(object): key = object.id
         case let .menu(item): key = item.id
         case let .contact(person):
-            guard case let .applicationDefined(id) = person.identifier?.value else {
+            guard case let .applicationDefined(id) = person.identifier else {
                 throw UnifiedPickerError.missingSelection
             }
             key = id
