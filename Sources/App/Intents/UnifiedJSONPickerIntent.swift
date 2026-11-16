@@ -61,8 +61,8 @@ struct UnifiedJSONPickerIntent: AppIntent {
             }
 
         // Shortcuts may re-query the entities during and after presentation.
-        try SearchableRichRuntimeStore.save(richRows.map(\.entity), session: session)
-        try MixedMenuChoiceStore.save(menuRows.map(\.entity), session: session)
+        try SearchableRichRuntimeStore.save(richRows.map { $0.entity }, session: session)
+        try MixedMenuChoiceStore.save(menuRows.map { $0.entity }, session: session)
 
         let richByIndex = Dictionary(uniqueKeysWithValues: richRows.map {
             ($0.index, $0.entity)
