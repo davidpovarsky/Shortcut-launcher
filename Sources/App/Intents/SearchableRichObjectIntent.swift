@@ -4,7 +4,7 @@ import UIKit
 
 /// Persistent, synthetic objects for testing Shortcuts' EDITOR-TIME searchable
 /// AppEntity picker. These are not actual Files, Contacts, Photos or Mail items.
-struct SearchableRichSampleEntity: AppEntity, Sendable {
+struct SearchableRichSampleEntity: AppEntity, Sendable, Codable {
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Rich Demo Object")
     static let defaultQuery = SearchableRichSampleQuery()
 
@@ -45,7 +45,12 @@ struct SearchableRichSampleEntity: AppEntity, Sendable {
 struct SearchableRichSampleQuery: EntityStringQuery {
     func entities(for identifiers: [String]) async throws -> [SearchableRichSampleEntity] {
         let all = await SearchableRichSampleCatalog.entities
-        let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+        var byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+        // Runtime JSON choices use the same type, but session-scoped IDs.
+        // Resolve them in addition to the original stable example catalog.
+        for entity in SearchableRichRuntimeStore.resolve(identifiers) {
+            byID[entity.id] = entity
+        }
         return identifiers.compactMap { byID[$0] }
     }
 
@@ -63,10 +68,66 @@ struct SearchableRichSampleQuery: EntityStringQuery {
     }
 }
 
+
+/// Session-scoped rich entities for runtime JSON choices. Apple may re-query
+/// identifiers after presenting its picker, so the values are available for an
+/// hour instead of disappearing immediately upon returning the chosen JSON.
+enum SearchableRichRuntimeStore {
+    private static let keyPrefix = "richObject.runtime."
+    private static let lifetime: TimeInterval = 60 * 60
+
+    private struct Snapshot: Codable {
+        let createdAt: Date
+        let entities: [SearchableRichSampleEntity]
+    }
+
+    static func save(_ entities: [SearchableRichSampleEntity], session: String) throws {
+        let defaults = AppEnvironment.sharedDefaults
+        pruneExpired(in: defaults)
+        let snapshot = Snapshot(createdAt: .now, entities: entities)
+        defaults.set(try JSONEncoder().encode(snapshot), forKey: keyPrefix + session)
+    }
+
+    static func resolve(_ identifiers: [String]) -> [SearchableRichSampleEntity] {
+        let defaults = AppEnvironment.sharedDefaults
+        let sessions = Set(identifiers.compactMap { id in
+            id.split(separator: ":", maxSplits: 1).first.map(String.init)
+        })
+        var found: [String: SearchableRichSampleEntity] = [:]
+        for session in sessions {
+            guard let data = defaults.data(forKey: keyPrefix + session),
+                  let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data),
+                  Date().timeIntervalSince(snapshot.createdAt) <= lifetime else {
+                continue
+            }
+            for entity in snapshot.entities {
+                found[entity.id] = entity
+            }
+        }
+        return identifiers.compactMap { found[$0] }
+    }
+
+    static func remove(session: String) {
+        AppEnvironment.sharedDefaults.removeObject(forKey: keyPrefix + session)
+    }
+
+    private static func pruneExpired(in defaults: UserDefaults) {
+        for (key, value) in defaults.dictionaryRepresentation()
+        where key.hasPrefix(keyPrefix) {
+            guard let data = value as? Data,
+                  let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data),
+                  Date().timeIntervalSince(snapshot.createdAt) <= lifetime else {
+                defaults.removeObject(forKey: key)
+                continue
+            }
+        }
+    }
+}
+
 /// Render the thumbnails once on the main actor; the query returns cached
 /// Sendable value objects, so no Contacts/Photos/Files permissions are used.
 @MainActor
-private enum SearchableRichSampleCatalog {
+enum SearchableRichSampleCatalog {
     private typealias Sample = (
         id: String, name: String, subtitle: String, category: String,
         source: String, details: String, tags: String,
@@ -108,7 +169,7 @@ private enum SearchableRichSampleCatalog {
         )
     }
 
-    private static func thumbnail(symbol: String, rgb: UInt32) -> Data {
+    static func thumbnail(symbol: String, rgb: UInt32) -> Data {
         let size: CGFloat = 88
         let color = UIColor(
             red: CGFloat((rgb >> 16) & 0xFF) / 255,

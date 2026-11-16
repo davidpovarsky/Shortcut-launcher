@@ -57,8 +57,15 @@ final class UnifiedPickerParserTests: XCTestCase {
     }
 
     func testNativeUnionContainsThreeDistinctValueTypes() {
-        let rich = UnifiedRichObjectEntity(
-            id: "session:0", name: "A document", subtitle: "PDF", iconPNG: Data()
+        let rich = SearchableRichSampleEntity(
+            id: "session:0",
+            name: "A document",
+            category: "Document",
+            source: "Files",
+            details: "PDF example",
+            tags: "report",
+            subtitle: "PDF",
+            iconPNG: Data()
         )
         let contact = IntentPerson(
             identifier: .applicationDefined("session:1"),
@@ -77,6 +84,29 @@ final class UnifiedPickerParserTests: XCTestCase {
         if case .rich = variants[0] {} else { XCTFail("Rich case lost") }
         if case .contact = variants[1] {} else { XCTFail("Contact case lost") }
         if case .menu = variants[2] {} else { XCTFail("Menu case lost") }
+    }
+
+    func testRuntimeRichEntityIsTheSameTypeAsTheOriginalAction() throws {
+        let session = UUID().uuidString
+        let entity = SearchableRichSampleEntity(
+            id: "\(session):0",
+            name: "דוח פעילות 2026",
+            category: "מסמך",
+            source: "Files",
+            details: "Annual report",
+            tags: "PDF annual",
+            subtitle: "PDF · 24 עמודים",
+            iconPNG: Data([137, 80, 78, 71])
+        )
+        try SearchableRichRuntimeStore.save([entity], session: session)
+        defer { SearchableRichRuntimeStore.remove(session: session) }
+
+        let found = SearchableRichRuntimeStore.resolve([entity.id])
+        XCTAssertEqual(found.count, 1)
+        XCTAssertEqual(found.first?.id, entity.id)
+        XCTAssertEqual(found.first?.name, entity.name)
+        XCTAssertEqual(found.first?.details, entity.details)
+        XCTAssertEqual(found.first?.iconPNG, entity.iconPNG)
     }
 
     func testRejectsInvalidColorAndEmptyInput() throws {

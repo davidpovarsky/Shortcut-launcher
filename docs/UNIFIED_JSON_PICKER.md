@@ -8,7 +8,7 @@ was incorrect for this experiment.
 
 Version 2 uses a real native typed union with three distinct cases:
 
-- Rich: UnifiedRichObjectEntity, an AppEntity with its own image and subtitle.
+- Rich: SearchableRichSampleEntity, the exact AppEntity used by LAB Searchable Rich Objects.
 - Contact: IntentPerson with an application-defined identifier and optional handle.
 - Menu: MixedMenuChoiceEntity, keeping the prior menu type.
 
@@ -22,6 +22,8 @@ be inspected on iPadOS 27. It may group by case or normalize the rows.
 
 Sources:
 - Sources/Shared/Intents/UnifiedNativePickerValue.swift
+- Sources/App/Intents/UnifiedRichSampleFactory.swift
+- Sources/App/Intents/SearchableRichObjectIntent.swift (original entity and query)
 - Sources/App/Intents/UnifiedJSONPickerIntent.swift
 - Sources/Shared/Intents/UnifiedPickerParser.swift
 
@@ -117,3 +119,10 @@ encoding). This is an app-defined JSON record, not an actual `IntentPerson`.
 
 Xcode / device runtime acceptance is required; local Swift parsing and unit
 tests alone do not prove the picker presentation.
+
+## 2026-11-16 correction: original rich object rendering
+
+Previous UnionValue revision used a new surrogate `UnifiedRichObjectEntity` created from a `MixedMenuChoiceEntity`. This made rich rows look like menu items even if the type label differed.
+The rich union case now directly holds the original `SearchableRichSampleEntity` and uses the original catalog thumbnail renderer. Its EntityStringQuery resolves session-scoped rich JSON items using an App Group-backed runtime store, without changing the original fixed catalog. Menu entries continue using `MixedMenuChoiceEntity` and contacts use `IntentPerson`.
+
+Native Shortcuts sheet styling is controlled by iPadOS. Compilation alone does not prove visual parity with the original editor picker.

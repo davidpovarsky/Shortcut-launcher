@@ -31,30 +31,59 @@ struct UnifiedJSONPickerIntent: AppIntent {
         let entries = try UnifiedPickerParser.parse(mixedJSON)
         let session = UUID().uuidString
 
-        // Only rich and menu AppEntities need App Group re-resolution.
-        let representations = await MainActor.run {
-            entries.enumerated().map { index, entry in
-                MixedMenuChoiceEntity(
-                    id: "\(session):\(index)",
-                    title: entry.appearance.title,
-                    subtitle: entry.appearance.subtitle,
-                    type: entry.appearance.type,
-                    imageData: MixedMenuIconRenderer.image(for: entry.appearance)
-                )
+        // Build each case from its ORIGINAL concrete App Intents type.
+        // The rich case never passes through MixedMenuChoiceEntity.
+        let richRows: [(index: Int, entity: SearchableRichSampleEntity)] =
+            await MainActor.run {
+                entries.enumerated().compactMap { index, entry in
+                    guard entry.format == .richObject else { return nil }
+                    let entity = UnifiedRichSampleFactory.make(
+                        entry: entry, id: "\(session):\(index)"
+                    )
+                    return (index: index, entity: entity)
+                }
             }
-        }
-        try MixedMenuChoiceStore.save(representations, session: session)
-        defer { MixedMenuChoiceStore.remove(session: session) }
+        let menuRows: [(index: Int, entity: MixedMenuChoiceEntity)] =
+            await MainActor.run {
+                entries.enumerated().compactMap { index, entry in
+                    guard entry.format == .menu else { return nil }
+                    return (
+                        index: index,
+                        entity: MixedMenuChoiceEntity(
+                            id: "\(session):\(index)",
+                            title: entry.appearance.title,
+                            subtitle: entry.appearance.subtitle,
+                            type: entry.appearance.type,
+                            imageData: MixedMenuIconRenderer.image(for: entry.appearance)
+                        )
+                    )
+                }
+            }
 
-        let choices: [UnifiedNativePickerValue] = entries.enumerated().map { index, entry in
-            let representation = representations[index]
+        // Shortcuts may re-query the entities during and after presentation.
+        try SearchableRichRuntimeStore.save(richRows.map(\.entity), session: session)
+        try MixedMenuChoiceStore.save(menuRows.map(\.entity), session: session)
+
+        let richByIndex = Dictionary(uniqueKeysWithValues: richRows.map {
+            ($0.index, $0.entity)
+        })
+        let menuByIndex = Dictionary(uniqueKeysWithValues: menuRows.map {
+            ($0.index, $0.entity)
+        })
+        let choices: [UnifiedNativePickerValue] = try entries.enumerated().map { index, entry in
             switch entry.format {
             case .richObject:
-                return .rich(UnifiedRichObjectEntity(menuEntry: representation))
+                guard let rich = richByIndex[index] else {
+                    throw UnifiedPickerError.missingSelection
+                }
+                return .rich(rich)
             case .contact:
-                return .contact(contact(entry: entry, id: representation.id))
+                return .contact(contact(entry: entry, id: "\(session):\(index)"))
             case .menu:
-                return .menu(representation)
+                guard let menu = menuByIndex[index] else {
+                    throw UnifiedPickerError.missingSelection
+                }
+                return .menu(menu)
             }
         }
 
