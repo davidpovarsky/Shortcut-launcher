@@ -1,4 +1,5 @@
 import XCTest
+import AppIntents
 @testable import DavLauncher
 
 final class UnifiedPickerParserTests: XCTestCase {
@@ -53,6 +54,29 @@ final class UnifiedPickerParserTests: XCTestCase {
         let entries = try UnifiedPickerParser.parse(json)
         XCTAssertEqual(entries.count, 2)
         XCTAssertEqual(entries.map(\.appearance.id), ["first", "second"])
+    }
+
+    func testNativeUnionContainsThreeDistinctValueTypes() {
+        let rich = UnifiedRichObjectEntity(
+            id: "session:0", name: "A document", subtitle: "PDF", iconPNG: Data()
+        )
+        let contact = IntentPerson(
+            identifier: .applicationDefined("session:1"),
+            name: .displayName("A person"),
+            handle: .init(emailAddress: "example@example.com")
+        )
+        let menu = MixedMenuChoiceEntity(
+            id: "session:2", title: "A menu", subtitle: "Action",
+            type: "rich", imageData: nil
+        )
+        let variants: [UnifiedNativePickerValue] = [
+            .rich(rich),
+            .contact(contact),
+            .menu(menu)
+        ]
+        if case .rich = variants[0] {} else { XCTFail("Rich case lost") }
+        if case .contact = variants[1] {} else { XCTFail("Contact case lost") }
+        if case .menu = variants[2] {} else { XCTFail("Menu case lost") }
     }
 
     func testRejectsInvalidColorAndEmptyInput() throws {

@@ -2,21 +2,31 @@
 
 ## Overview
 
-One Shortcuts action accepts JSON containing **three formats** from the existing experiments:
-rich objects, contact-shaped people, and menu entries. It presents **one native
-Shortcuts runtime selection sheet** and returns the selected item's JSON.
+The first version flattened all the choices into a single menu entity, which
+caused the same visual format for rich objects, contacts and menu rows. That
+was incorrect for this experiment.
 
-This is not three native picker engines merged together. All entries use one
-temporary `MixedMenuChoiceEntity` UI representation. A contact in this menu
-is NOT a real Contacts record or `IntentPerson`. Only the visual title,
-subtitle and thumbnail are shared; the original format and fields are preserved
-in the return value. Native Contacts search and runtime AppEntity text search
-are **not guaranteed** by this API.
+Version 2 uses a real native typed union with three distinct cases:
 
-Source files:
-- `Sources/App/Intents/UnifiedJSONPickerIntent.swift`
-- `Sources/Shared/Intents/UnifiedPickerParser.swift`
-- Existing `MixedMenuChoiceStore` and `MixedMenuIconRenderer` reused without changes.
+- Rich: UnifiedRichObjectEntity, an AppEntity with its own image and subtitle.
+- Contact: IntentPerson with an application-defined identifier and optional handle.
+- Menu: MixedMenuChoiceEntity, keeping the prior menu type.
+
+The selection still returns the original JSON unchanged within the output envelope.
+It does NOT create or fetch Contacts records from the device.
+
+The native Shortcuts host owns the actual presentation. A mixed UnionValue
+parameter can retain the underlying types but cannot GUARANTEE that the runtime
+disambiguation sheet will show three different visual row styles. This must
+be inspected on iPadOS 27. It may group by case or normalize the rows.
+
+Sources:
+- Sources/Shared/Intents/UnifiedNativePickerValue.swift
+- Sources/App/Intents/UnifiedJSONPickerIntent.swift
+- Sources/Shared/Intents/UnifiedPickerParser.swift
+
+Apple's WWDC26 App Intents session (UnionValue chapter):
+https://developer.apple.com/videos/play/wwdc2026/345/
 
 ## Action
 
@@ -93,9 +103,10 @@ encoding). This is an app-defined JSON record, not an actual `IntentPerson`.
 1. Build the branch with Xcode 27, sign, install on iPadOS 27.
 2. Open the app once, then Shortcuts. Add **LAB: Unified JSON Picker**.
 3. Paste the mixed array into **Mixed JSON**. Run it.
-4. Check the system picker shows all rich/contact/menu items together, with
-   title, subtitle, and images where supported. Choose a contact and
-   a rich item in separate runs.
+4. Inspect whether iPadOS uses truly different visual rows or normalizes
+   all three native types. Choose rich, contact, and menu separately to check
+   that the output maps to the correct original JSON item. If the host still
+   uses one layout for all rows, this experimental approach is NOT a visual fix.
 5. Append **Show Result** to verify the returned JSON `format` and `item`
    match the selection. Verify all custom fields survived.
 6. Cancel the picker: the action should cancel and not emit a default item.
