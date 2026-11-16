@@ -42,6 +42,8 @@ Important unresolved questions or uncertainties.
 
 - [ ] On-device iPadOS 27 acceptance: `LAB: SiriKit Live Search` should expose searchable app-owned suggestions in **runtime** (not only editor). Search `invoice` and `מתכון`; compare with AppEntity and native Contacts pickers and record whether the parameter must be tapped. If absent from Shortcuts, investigate custom intent discoverability/donation separately. See docs/SIRIKIT_DYNAMIC_SEARCH_EXPERIMENT.md.
 
+- [ ] iPadOS 27 acceptance: LAB: Unified JSON Picker combines richObject/contact/menu JSON into one native runtime AppEntity disambiguation sheet; confirm mixed rows, thumbnails, cancellation, output JSON and whether runtime search is available. This is a contact-*shaped* row, not a real IntentPerson picker. See docs/UNIFIED_JSON_PICKER.md.
+
 ## Planned / Todo
 
 Concrete work that is worth doing but is not part of the current task.
