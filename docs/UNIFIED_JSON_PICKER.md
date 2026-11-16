@@ -21,7 +21,7 @@ disambiguation sheet will show three different visual row styles. This must
 be inspected on iPadOS 27. It may group by case or normalize the rows.
 
 Sources:
-- Sources/Shared/Intents/UnifiedNativePickerValue.swift
+- Sources/App/Intents/UnifiedNativePickerValue.swift
 - Sources/App/Intents/UnifiedRichSampleFactory.swift
 - Sources/App/Intents/SearchableRichObjectIntent.swift (original entity and query)
 - Sources/App/Intents/UnifiedJSONPickerIntent.swift
@@ -126,3 +126,9 @@ Previous UnionValue revision used a new surrogate `UnifiedRichObjectEntity` crea
 The rich union case now directly holds the original `SearchableRichSampleEntity` and uses the original catalog thumbnail renderer. Its EntityStringQuery resolves session-scoped rich JSON items using an App Group-backed runtime store, without changing the original fixed catalog. Menu entries continue using `MixedMenuChoiceEntity` and contacts use `IntentPerson`.
 
 Native Shortcuts sheet styling is controlled by iPadOS. Compilation alone does not prove visual parity with the original editor picker.
+
+## 2026-11-16 build-target fix
+
+The native union includes the original SearchableRichSampleEntity, which is
+an app-only type. Keep UnifiedNativePickerValue.swift under Sources/App/Intents
+so the widget extension never tries to compile it without that dependency.
