@@ -24,7 +24,7 @@ struct UnifiedJSONPickerIntent: AppIntent {
     var selectedItem: MixedMenuChoiceEntity?
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Choose from mixed JSON \(.$mixedJSON)")
+        Summary("Choose from mixed JSON \(\.$mixedJSON)")
     }
 
     init() {}
