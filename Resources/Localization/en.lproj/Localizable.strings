@@ -165,3 +165,26 @@
 "Lights on" = "Lights on";
 "Run reading automation" = "Run reading automation";
 "Run lights automation" = "Run lights automation";
+
+"Get Connected Devices" = "Get Connected Devices";
+"List accessible connected audio, Bluetooth LE and external accessories. Reads battery levels only when the device exposes them to public iOS APIs; unavailable values are not estimated." = "List accessible connected audio, Bluetooth LE and external accessories. Reads battery levels only when the device exposes them to public iOS APIs; unavailable values are not estimated.";
+"Get connected devices and available battery details" = "Get connected devices and available battery details";
+"Connected Device" = "Connected Device";
+"Device Type" = "Device Type";
+"Connection" = "Connection";
+"Information Source" = "Information Source";
+"Battery Percentage" = "Battery Percentage";
+"Battery Readings" = "Battery Readings";
+"Manufacturer" = "Manufacturer";
+"Model" = "Model";
+"Serial Number" = "Serial Number";
+"Firmware Version" = "Firmware Version";
+"Hardware Version" = "Hardware Version";
+"Bluetooth Identifier" = "Bluetooth Identifier";
+"Audio Port Identifier" = "Audio Port Identifier";
+"Audio Port Type" = "Audio Port Type";
+"Signal Strength (dBm)" = "Signal Strength (dBm)";
+"BLE Services" = "BLE Services";
+"Accessory Protocols" = "Accessory Protocols";
+"Observed At" = "Observed At";
+"Not available" = "Not available";

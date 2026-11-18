@@ -1,1 +1,2 @@
 "CFBundleDisplayName" = "Dav Launcher";
+"NSBluetoothAlwaysUsageDescription" = "Dav Launcher reads names and available battery levels of connected Bluetooth accessories when you run Get Connected Devices.";

@@ -165,3 +165,26 @@
 "Lights on" = "האורות דולקים";
 "Run reading automation" = "הפעל אוטומציית קריאה";
 "Run lights automation" = "הפעל אוטומציית אורות";
+
+"Get Connected Devices" = "הצג מכשירים מחוברים";
+"List accessible connected audio, Bluetooth LE and external accessories. Reads battery levels only when the device exposes them to public iOS APIs; unavailable values are not estimated." = "הצג התקני שמע, Bluetooth LE ואביזרים מחוברים שהמערכת מאפשרת לזהות. רמת הסוללה תוצג רק כשההתקן חושף אותה דרך ממשק ציבורי ב־iOS; ערכים שאינם זמינים לא יוערכו.";
+"Get connected devices and available battery details" = "הצג מכשירים מחוברים ופרטי סוללה זמינים";
+"Connected Device" = "מכשיר מחובר";
+"Device Type" = "סוג מכשיר";
+"Connection" = "חיבור";
+"Information Source" = "מקור מידע";
+"Battery Percentage" = "אחוז סוללה";
+"Battery Readings" = "מדידות סוללה";
+"Manufacturer" = "יצרן";
+"Model" = "דגם";
+"Serial Number" = "מספר סידורי";
+"Firmware Version" = "גרסת קושחה";
+"Hardware Version" = "גרסת חומרה";
+"Bluetooth Identifier" = "מזהה Bluetooth";
+"Audio Port Identifier" = "מזהה יציאת שמע";
+"Audio Port Type" = "סוג יציאת שמע";
+"Signal Strength (dBm)" = "עוצמת אות (dBm)";
+"BLE Services" = "שירותי BLE";
+"Accessory Protocols" = "פרוטוקולים";
+"Observed At" = "זמן המדידה";
+"Not available" = "לא זמין";

@@ -44,6 +44,8 @@ Important unresolved questions or uncertainties.
 
 - [ ] iPadOS 27 acceptance: LAB: Unified JSON Picker now uses a native UnionValue containing the ORIGINAL SearchableRichSampleEntity (rather than a surrogate based on a menu row), IntentPerson and Menu AppEntity. The rich query supports runtime JSON sessions while retaining existing catalog search. On-device verify whether the host actually presents DIFFERENT row layouts or normalizes them despite distinct value types. User needs three distinctive native presentations, not merely type preservation. See docs/UNIFIED_JSON_PICKER.md.
 
+- [ ] On-device acceptance of Get Connected Devices: real BLE battery, audio-route fallback, Bluetooth permissions, Get Details. See docs/CONNECTED_DEVICES_SHORTCUT.md.
+
 ## Planned / Todo
 
 Concrete work that is worth doing but is not part of the current task.

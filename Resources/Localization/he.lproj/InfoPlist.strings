@@ -1,1 +1,2 @@
 "CFBundleDisplayName" = "Dav Launcher";
+"NSBluetoothAlwaysUsageDescription" = "משגר הקיצורים קורא שמות ורמות סוללה זמינות של אביזרי Bluetooth מחוברים כאשר מפעילים את הפעולה ״הצג מכשירים מחוברים״.";
