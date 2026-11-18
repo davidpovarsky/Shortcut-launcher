@@ -3,7 +3,8 @@
 Action: **Get Connected Devices** (GetConnectedDevicesIntent).
 
 - Returns native [ConnectedDeviceEntity] output for **Choose from List**, **Repeat with Each**, and **Get Details**. Results are timestamped snapshots (entity lookup retained up to 10 minutes); rerun for fresh state.
-- Sources: currently active audio inputs/outputs from AVAudioSession.currentRoute (excluding built-in ports), ExternalAccessory.connectedAccessories, and system-connected BLE peripherals matching known GATT services.
+- Sources: currently active audio inputs/outputs from AVAudioSession.currentRoute (excluding built-in ports), ExternalAccessory.connectedAccessories, system-connected BLE peripherals matching known GATT services, and connected game controllers (GameController).
+- For connected controllers, GameController exposes battery level/state when supported; an unknown state is NOT treated as 0%.
 - BLE: connect locally (as Apple requires) and read Bluetooth SIG Battery Service 180F / Battery Level 2A19, optional Device Information Service 180A, and RSSI when available.
 - Unknown values remain unavailable, never estimated. Multiple separate battery measurements are preserved in Battery Readings rather than claiming a total percentage.
 - Limit: iOS public APIs do not enumerate all paired Bluetooth Classic devices or expose Classic headset battery. Sony and other Bluetooth audio headsets may appear as active audio route but usually have battery Not available.

@@ -9,6 +9,7 @@ struct ConnectedDeviceRecord: Codable, Equatable, Sendable {
     var source: String
     var connection: String = "Connected"
     var batteryLevels: [Int] = []
+    var batteryState: String?
     var manufacturer: String?
     var model: String?
     var serialNumber: String?
@@ -29,7 +30,7 @@ struct ConnectedDeviceRecord: Codable, Equatable, Sendable {
     }
 
     var batteryDescription: String {
-        batteryLevels.isEmpty ? "Not available" : batteryLevels.map { "\($0)%" }.joined(separator: ", ")
+        batteryLevels.isEmpty ? String(localized: "Not available") : batteryLevels.map { "\($0)%" }.joined(separator: ", ")
     }
 }
 
@@ -71,6 +72,9 @@ struct ConnectedDeviceEntity: AppEntity, Sendable {
 
     @Property(title: "Battery Readings")
     var batteryReadings: String
+
+    @Property(title: "Battery State")
+    var batteryState: String?
 
     @Property(title: "Manufacturer")
     var manufacturer: String?
@@ -116,6 +120,7 @@ struct ConnectedDeviceEntity: AppEntity, Sendable {
         source = record.source
         batteryPercentage = record.batteryPercentage
         batteryReadings = record.batteryDescription
+        batteryState = record.batteryState
         manufacturer = record.manufacturer
         model = record.model
         serialNumber = record.serialNumber

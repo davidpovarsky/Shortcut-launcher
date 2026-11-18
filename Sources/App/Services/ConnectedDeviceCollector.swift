@@ -2,6 +2,7 @@ import AVFAudio
 import CoreBluetooth
 import ExternalAccessory
 import Foundation
+import GameController
 
 /// Only PUBLIC iOS APIs. Audio routing has no public battery property;
 /// Classic Bluetooth paired-device enumeration is not exposed to apps.
@@ -9,8 +10,12 @@ import Foundation
 enum ConnectedDeviceCollector {
     static func collect() async -> [ConnectedDeviceRecord] {
         // Collect audio + MFi first, even if Bluetooth authorization is denied.
-        var records = audioAccessories() + externalAccessories()
-        records += await ConnectedBLEReader().read()
+        var records = audioAccessories() + externalAccessories() + gameControllers()
+        let reader = ConnectedBLEReader()
+        let bluetoothRecords = await reader.read()
+        // Keep the delegate alive across the suspended async read.
+        withExtendedLifetime(reader) {}
+        records += bluetoothRecords
         return records.sorted {
             $0.name.localizedStandardCompare($1.name) == .orderedAscending
         }
@@ -33,6 +38,29 @@ enum ConnectedDeviceCollector {
                 audioPortUID: port.uid,
                 audioPortType: port.portType.rawValue
             )
+        }
+    }
+
+    private static func gameControllers() -> [ConnectedDeviceRecord] {
+        GCController.controllers().map { controller in
+            var record = ConnectedDeviceRecord(
+                name: controller.vendorName ?? "Game Controller",
+                kind: "Game controller",
+                source: "GameController"
+            )
+            // BatteryLevel defaults to 0 even when the state is unknown.
+            // Never misreport that default as a measured empty battery.
+            if let battery = controller.battery, battery.batteryState != .unknown,
+               (0...1).contains(battery.batteryLevel) {
+                record.batteryLevels = [Int((battery.batteryLevel * 100).rounded())]
+                switch battery.batteryState {
+                case .charging: record.batteryState = "Charging"
+                case .discharging: record.batteryState = "Discharging"
+                case .full: record.batteryState = "Full"
+                default: break
+                }
+            }
+            return record
         }
     }
 
